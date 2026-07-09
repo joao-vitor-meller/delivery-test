@@ -6,6 +6,7 @@ import {
   Patch,
   Param,
   ParseIntPipe,
+  ParseUUIDPipe,
   Query,
   HttpStatus,
 } from '@nestjs/common';
@@ -81,8 +82,35 @@ export class OrdersController {
     return this.ordersService.findAll({ ...query, clienteId: cliente.id });
   }
 
+  @Get('track/:token')
+  @ApiOperation({
+    summary:
+      'Busca um pedido pelo token de rastreio (link público, sem necessidade de login)',
+  })
+  @ApiParam({
+    name: 'token',
+    type: String,
+    description: 'Token de rastreio do pedido',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Pedido encontrado',
+    type: Pedido,
+  })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'Pedido não encontrado',
+  })
+  findByTrackingToken(@Param('token', ParseUUIDPipe) token: string) {
+    return this.ordersService.findOneByTrackingToken(token);
+  }
+
   @Get(':id')
-  @ApiOperation({ summary: 'Busca um pedido pelo id (PÚBLICO)' })
+  @Auth()
+  @ApiOperation({
+    summary:
+      'Busca um pedido pelo id (ADMIN busca qualquer pedido; CLIENTE apenas os seus)',
+  })
   @ApiParam({
     name: 'id',
     type: Number,
@@ -94,11 +122,18 @@ export class OrdersController {
     type: Pedido,
   })
   @ApiResponse({
+    status: HttpStatus.FORBIDDEN,
+    description: 'Pedido pertence a outro cliente',
+  })
+  @ApiResponse({
     status: HttpStatus.NOT_FOUND,
     description: 'Pedido não encontrado',
   })
-  findOne(@Param('id', ParseIntPipe) id: number) {
-    return this.ordersService.findOne(id);
+  findOne(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() cliente: Cliente,
+  ) {
+    return this.ordersService.findOneForUser(id, cliente);
   }
 
   @Patch(':id/status')

@@ -51,9 +51,4 @@ export class ProductsService {
 
     return this.productsRepository.save(produto);
   }
-
-  async remove(id: number): Promise<void> {
-    const produto = await this.findOne(id);
-    await this.productsRepository.remove(produto);
-  }
 }

@@ -5,9 +5,7 @@ import {
   Body,
   Patch,
   Param,
-  Delete,
   ParseIntPipe,
-  HttpCode,
   HttpStatus,
 } from '@nestjs/common';
 import {
@@ -106,25 +104,5 @@ export class ClientsController {
     @Body() updateClientDto: UpdateClientDto,
   ) {
     return this.clientsService.update(id, updateClientDto);
-  }
-
-  @Delete(':id')
-  @HttpCode(HttpStatus.NO_CONTENT)
-  @ApiOperation({ summary: 'Remove um cliente (ADMIN)' })
-  @ApiParam({
-    name: 'id',
-    type: Number,
-    description: 'Identificador do cliente',
-  })
-  @ApiResponse({
-    status: HttpStatus.NO_CONTENT,
-    description: 'Cliente removido com sucesso',
-  })
-  @ApiResponse({
-    status: HttpStatus.NOT_FOUND,
-    description: 'Cliente não encontrado',
-  })
-  remove(@Param('id', ParseIntPipe) id: number) {
-    return this.clientsService.remove(id);
   }
 }
