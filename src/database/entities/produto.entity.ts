@@ -21,6 +21,10 @@ export class Produto {
   @Column({ name: 'criado_em', type: 'timestamp', default: () => 'NOW()' })
   criadoEm!: Date;
 
+  @ApiProperty({ description: 'Quantidade em estoque', example: 25 })
+  @Column({ type: 'int', default: 0 })
+  estoque!: number;
+
   @OneToMany(() => PedidoItem, (item) => item.produto)
   itens!: PedidoItem[];
 }

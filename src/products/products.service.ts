@@ -16,6 +16,7 @@ export class ProductsService {
     const produto = this.productsRepository.create({
       nome: createProductDto.nome,
       preco: createProductDto.preco.toFixed(2),
+      estoque: createProductDto.estoque ?? 0,
     });
     return this.productsRepository.save(produto);
   }
@@ -43,6 +44,9 @@ export class ProductsService {
     }
     if (updateProductDto.preco !== undefined) {
       produto.preco = updateProductDto.preco.toFixed(2);
+    }
+    if (updateProductDto.estoque !== undefined) {
+      produto.estoque = updateProductDto.estoque;
     }
 
     return this.productsRepository.save(produto);

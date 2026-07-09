@@ -6,7 +6,8 @@
     "deleteOutDir": true,
     "assets": [
       { "include": "mail/templates/**/*", "watchAssets": true },
-      { "include": "web/views/**/*", "watchAssets": true }
+      { "include": "web/views/**/*", "watchAssets": true },
+      { "include": "web/public/**/*", "watchAssets": true }
     ]
   }
 }

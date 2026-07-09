@@ -27,6 +27,7 @@ import { MailService } from '../mail/mail.service';
 import { OrdersGateway } from './orders.gateway';
 
 const STATUS_INICIAL = 'pendente';
+const STATUS_CANCELADO = 'cancelado';
 const POSTGRES_UNIQUE_VIOLATION = '23505';
 
 function endOfDay(dateString: string): Date {
@@ -100,6 +101,24 @@ export class OrdersService {
           }),
         );
 
+        for (const item of itensInput) {
+          const result = await manager
+            .createQueryBuilder()
+            .update(Produto)
+            .set({ estoque: () => `estoque - ${item.quantidade}` })
+            .where('id = :id AND estoque >= :quantidade', {
+              id: item.produto.id,
+              quantidade: item.quantidade,
+            })
+            .execute();
+
+          if (result.affected === 0) {
+            throw new BadRequestException(
+              `Estoque insuficiente para o produto "${item.produto.nome}"`,
+            );
+          }
+        }
+
         const itens = itensInput.map((item) =>
           manager.create(PedidoItem, { ...item, pedido: pedidoSalvo }),
         );
@@ -171,12 +190,26 @@ export class OrdersService {
       );
     }
 
+    const estavaCancelado = pedido.status.nome === STATUS_CANCELADO;
+    const vaiCancelar = status.nome === STATUS_CANCELADO;
     pedido.status = status;
+
     await this.pedidosRepository.manager.transaction(async (manager) => {
       await manager.save(pedido);
       await manager.save(
         manager.create(PedidoStatusHistorico, { pedido, status }),
       );
+
+      if (!estavaCancelado && vaiCancelar) {
+        for (const item of pedido.itens) {
+          await manager.increment(
+            Produto,
+            { id: item.produto.id },
+            'estoque',
+            item.quantidade,
+          );
+        }
+      }
     });
 
     const pedidoAtualizado = await this.findOne(id);

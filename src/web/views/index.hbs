@@ -1,966 +1,1498 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>{{title}}</title>
-<style>
-  :root {
-    --bg: #f4f5f7;
-    --surface: #ffffff;
-    --border: #e2e5ea;
-    --text: #1c1f26;
-    --muted: #6b7280;
-    --accent: #2563eb;
-    --accent-hover: #1d4ed8;
-    --danger: #dc2626;
-    --danger-hover: #b91c1c;
-    --success: #16a34a;
-    --radius: 8px;
-  }
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --bg: #14161b;
-      --surface: #1c1f26;
-      --border: #2d3138;
-      --text: #e7e9ee;
-      --muted: #9aa1ac;
-      --accent: #3b82f6;
-      --accent-hover: #60a5fa;
-      --danger: #f87171;
-      --danger-hover: #fca5a5;
-      --success: #4ade80;
-    }
-  }
-  * { box-sizing: border-box; }
-  body {
-    margin: 0;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    background: var(--bg);
-    color: var(--text);
-  }
-  header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 1rem;
-    padding: 0.9rem 1.5rem;
-    background: var(--surface);
-    border-bottom: 1px solid var(--border);
-    position: sticky;
-    top: 0;
-    z-index: 10;
-    flex-wrap: wrap;
-  }
-  header h1 {
-    font-size: 1.1rem;
-    margin: 0;
-  }
-  header h1 span { color: var(--muted); font-weight: 400; }
-  #auth-status {
-    display: flex;
-    align-items: center;
-    gap: 0.6rem;
-    font-size: 0.85rem;
-    color: var(--muted);
-  }
-  #auth-status strong { color: var(--text); }
-  .badge {
-    font-size: 0.7rem;
-    padding: 0.15rem 0.5rem;
-    border-radius: 999px;
-    background: var(--accent);
-    color: #fff;
-    text-transform: uppercase;
-    letter-spacing: 0.03em;
-  }
-  nav {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.4rem;
-    padding: 0.75rem 1.5rem;
-    background: var(--surface);
-    border-bottom: 1px solid var(--border);
-  }
-  nav button {
-    border: 1px solid var(--border);
-    background: transparent;
-    color: var(--text);
-    padding: 0.4rem 0.8rem;
-    border-radius: 999px;
-    cursor: pointer;
-    font-size: 0.85rem;
-  }
-  nav button.active {
-    background: var(--accent);
-    border-color: var(--accent);
-    color: #fff;
-  }
-  main {
-    max-width: 1000px;
-    margin: 0 auto;
-    padding: 1.5rem;
-  }
-  section.tab { display: none; }
-  section.tab.active { display: block; }
-  .card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 1.25rem;
-    margin-bottom: 1.25rem;
-  }
-  .card h2 {
-    margin-top: 0;
-    font-size: 1.05rem;
-  }
-  .card p.hint {
-    color: var(--muted);
-    font-size: 0.85rem;
-    margin-top: -0.5rem;
-  }
-  .grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-    gap: 0.75rem;
-  }
-  label {
-    display: block;
-    font-size: 0.8rem;
-    color: var(--muted);
-    margin-bottom: 0.25rem;
-  }
-  input, select {
-    width: 100%;
-    padding: 0.45rem 0.55rem;
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    background: var(--bg);
-    color: var(--text);
-    font-size: 0.9rem;
-  }
-  .field { margin-bottom: 0.75rem; }
-  button.btn {
-    border: none;
-    background: var(--accent);
-    color: #fff;
-    padding: 0.5rem 1rem;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 0.88rem;
-  }
-  button.btn:hover { background: var(--accent-hover); }
-  button.btn.secondary {
-    background: transparent;
-    color: var(--text);
-    border: 1px solid var(--border);
-  }
-  button.btn.danger { background: var(--danger); }
-  button.btn.danger:hover { background: var(--danger-hover); }
-  button.btn.small { padding: 0.3rem 0.6rem; font-size: 0.78rem; }
-  .row-actions { display: flex; gap: 0.4rem; flex-wrap: wrap; }
-  .item-row {
-    display: grid;
-    grid-template-columns: 2fr 1fr auto;
-    gap: 0.5rem;
-    align-items: end;
-    margin-bottom: 0.5rem;
-  }
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 0.85rem;
-  }
-  th, td {
-    text-align: left;
-    padding: 0.5rem;
-    border-bottom: 1px solid var(--border);
-    vertical-align: top;
-  }
-  th { color: var(--muted); font-weight: 600; }
-  .muted { color: var(--muted); }
-  .empty { color: var(--muted); font-style: italic; padding: 0.5rem 0; }
-  #toast-area {
-    position: fixed;
-    bottom: 1rem;
-    right: 1rem;
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-    z-index: 50;
-    max-width: 320px;
-  }
-  .toast {
-    padding: 0.65rem 0.9rem;
-    border-radius: 8px;
-    font-size: 0.85rem;
-    color: #fff;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-  }
-  .toast.ok { background: var(--success); }
-  .toast.err { background: var(--danger); }
-  .hidden { display: none !important; }
-  .pill {
-    display: inline-block;
-    padding: 0.1rem 0.5rem;
-    border-radius: 999px;
-    background: var(--bg);
-    border: 1px solid var(--border);
-    font-size: 0.75rem;
-  }
-  form.inline { display: contents; }
-  .filters { display: flex; gap: 0.6rem; flex-wrap: wrap; align-items: end; margin-bottom: 1rem; }
-  .filters .field { margin-bottom: 0; min-width: 140px; }
-</style>
-</head>
-<body>
+<html lang='pt-BR'>
+  <head>
+    <meta charset='utf-8' />
+    <meta name='viewport' content='width=device-width, initial-scale=1' />
+    <title>{{title}}</title>
+    <link rel='preconnect' href='https://fonts.googleapis.com' />
+    <link rel='preconnect' href='https://fonts.gstatic.com' crossorigin />
+    <link
+      href='https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700;800&family=DM+Sans:wght@400;500;600;700&display=swap'
+      rel='stylesheet'
+    />
+    <style>
+      :root {
+        --radius: 0.75rem;
+        --background: oklch(0.977 0.014 78);
+        --foreground: oklch(0.28 0.045 45);
+        --card: oklch(1 0 0);
+        --card-foreground: oklch(0.28 0.045 45);
+        --primary: oklch(0.6 0.19 38);
+        --primary-foreground: oklch(0.99 0.008 78);
+        --secondary: oklch(0.94 0.035 78);
+        --secondary-foreground: oklch(0.35 0.06 45);
+        --muted: oklch(0.945 0.022 78);
+        --muted-foreground: oklch(0.52 0.045 48);
+        --accent: oklch(0.9 0.07 70);
+        --accent-foreground: oklch(0.35 0.07 45);
+        --destructive: oklch(0.55 0.21 25);
+        --destructive-foreground: oklch(0.99 0.008 78);
+        --border: oklch(0.9 0.025 75);
+        --input: oklch(0.9 0.025 75);
+        --ring: oklch(0.6 0.19 38);
 
-<header>
-  <h1>Delivery App <span>· simulador de módulos</span></h1>
-  <div id="auth-status"></div>
-</header>
-
-<nav id="nav">
-  <button data-tab="novo-pedido" class="active">Novo Pedido</button>
-  <button data-tab="consultar-pedido">Consultar Pedido</button>
-  <button data-tab="conta">Conta</button>
-  <button data-tab="meus-pedidos" class="auth-only hidden">Meus Pedidos</button>
-  <button data-tab="todos-pedidos" class="admin-only hidden">Todos os Pedidos</button>
-  <button data-tab="produtos" class="admin-only hidden">Produtos</button>
-  <button data-tab="clientes" class="admin-only hidden">Clientes</button>
-</nav>
-
-<main>
-
-  <!-- NOVO PEDIDO (público) -->
-  <section id="tab-novo-pedido" class="tab active">
-    <div class="card">
-      <h2>Criar pedido</h2>
-      <p class="hint">Endpoint público <code>POST /orders</code>. Não é necessário estar autenticado. Se o e-mail informado ainda não tiver cadastro, um cliente é criado automaticamente.</p>
-      <form id="form-novo-pedido">
-        <div class="grid">
-          <div class="field">
-            <label>Nome do cliente (opcional se já cadastrado)</label>
-            <input type="text" id="np-nome" maxlength="150" placeholder="João da Silva" />
-          </div>
-          <div class="field">
-            <label>E-mail do cliente *</label>
-            <input type="email" id="np-email" maxlength="150" required placeholder="joao@email.com" />
-          </div>
-        </div>
-        <h3 style="font-size:0.9rem;margin-bottom:0.4rem;">Itens do pedido</h3>
-        <p class="hint" id="np-produtos-hint">Carregando produtos disponíveis...</p>
-        <datalist id="produtos-list"></datalist>
-        <div id="np-itens"></div>
-        <button type="button" class="btn secondary small" id="np-add-item">+ adicionar item</button>
-        <div style="margin-top:1rem;">
-          <button type="submit" class="btn">Criar pedido</button>
-        </div>
-      </form>
-    </div>
-    <div class="card hidden" id="np-result-card">
-      <h2>Pedido criado</h2>
-      <div id="np-result"></div>
-    </div>
-  </section>
-
-  <!-- CONSULTAR PEDIDO (público) -->
-  <section id="tab-consultar-pedido" class="tab">
-    <div class="card">
-      <h2>Consultar pedido por ID</h2>
-      <p class="hint">Endpoint público <code>GET /orders/:id</code>.</p>
-      <form id="form-consultar-pedido" class="filters">
-        <div class="field">
-          <label>ID do pedido</label>
-          <input type="number" min="1" id="cp-id" required />
-        </div>
-        <button type="submit" class="btn">Buscar</button>
-      </form>
-      <div id="cp-result"></div>
-    </div>
-  </section>
-
-  <!-- CONTA (login / registro) -->
-  <section id="tab-conta" class="tab">
-    <div class="card" id="conta-deslogado">
-      <h2>Entrar</h2>
-      <form id="form-login">
-        <div class="grid">
-          <div class="field">
-            <label>E-mail</label>
-            <input type="email" id="login-email" required placeholder="admin@delivery.com" />
-          </div>
-          <div class="field">
-            <label>Senha</label>
-            <input type="password" id="login-senha" required placeholder="admin123" />
-          </div>
-        </div>
-        <button type="submit" class="btn">Entrar</button>
-      </form>
-      <p class="hint">Use as credenciais do admin seedado (<code>admin@delivery.com</code> / <code>admin123</code>) ou registre um cliente novo abaixo.</p>
-    </div>
-
-    <div class="card hidden" id="conta-logado">
-      <h2>Sessão atual</h2>
-      <div id="conta-info"></div>
-      <button class="btn secondary" id="btn-logout">Sair</button>
-    </div>
-
-    <div class="card" id="conta-registro-card">
-      <h2>Registrar novo cliente</h2>
-      <p class="hint">Endpoint público <code>POST /auth/register</code>. Cria um cliente com papel "cliente" e já retorna um token.</p>
-      <form id="form-registro">
-        <div class="grid">
-          <div class="field">
-            <label>Nome</label>
-            <input type="text" id="reg-nome" required maxlength="150" />
-          </div>
-          <div class="field">
-            <label>E-mail</label>
-            <input type="email" id="reg-email" required maxlength="150" />
-          </div>
-          <div class="field">
-            <label>Senha (mín. 6 caracteres)</label>
-            <input type="password" id="reg-senha" required minlength="6" maxlength="255" />
-          </div>
-        </div>
-        <button type="submit" class="btn">Registrar e entrar</button>
-      </form>
-    </div>
-  </section>
-
-  <!-- MEUS PEDIDOS (autenticado) -->
-  <section id="tab-meus-pedidos" class="tab">
-    <div class="card">
-      <h2>Meus pedidos</h2>
-      <p class="hint">Endpoint <code>GET /orders/me</code> — visível para qualquer usuário autenticado (cliente ou admin), filtrado pelo próprio cadastro.</p>
-      <form id="form-meus-pedidos" class="filters">
-        <div class="field">
-          <label>Status</label>
-          <select id="mp-status"><option value="">Todos</option></select>
-        </div>
-        <div class="field">
-          <label>Data início</label>
-          <input type="date" id="mp-data-inicio" />
-        </div>
-        <div class="field">
-          <label>Data fim</label>
-          <input type="date" id="mp-data-fim" />
-        </div>
-        <button type="submit" class="btn">Filtrar</button>
-      </form>
-      <div id="mp-result"></div>
-    </div>
-  </section>
-
-  <!-- TODOS OS PEDIDOS (admin) -->
-  <section id="tab-todos-pedidos" class="tab">
-    <div class="card">
-      <h2>Todos os pedidos</h2>
-      <p class="hint">Endpoint <code>GET /orders</code> — apenas ADMIN. Permite atualizar o status de cada pedido (<code>PATCH /orders/:id/status</code>).</p>
-      <form id="form-todos-pedidos" class="filters">
-        <div class="field">
-          <label>Status</label>
-          <select id="tp-status"><option value="">Todos</option></select>
-        </div>
-        <div class="field">
-          <label>Cliente ID</label>
-          <input type="number" min="1" id="tp-cliente-id" />
-        </div>
-        <div class="field">
-          <label>Data início</label>
-          <input type="date" id="tp-data-inicio" />
-        </div>
-        <div class="field">
-          <label>Data fim</label>
-          <input type="date" id="tp-data-fim" />
-        </div>
-        <button type="submit" class="btn">Filtrar</button>
-      </form>
-      <div id="tp-result"></div>
-    </div>
-  </section>
-
-  <!-- PRODUTOS (admin) -->
-  <section id="tab-produtos" class="tab">
-    <div class="card">
-      <h2>Novo produto</h2>
-      <form id="form-produto-novo">
-        <div class="grid">
-          <div class="field">
-            <label>Nome</label>
-            <input type="text" id="pr-nome" required maxlength="150" />
-          </div>
-          <div class="field">
-            <label>Preço</label>
-            <input type="number" id="pr-preco" required min="0.01" step="0.01" />
-          </div>
-        </div>
-        <button type="submit" class="btn">Criar produto</button>
-      </form>
-    </div>
-    <div class="card">
-      <h2>Produtos cadastrados</h2>
-      <div id="pr-result"></div>
-    </div>
-  </section>
-
-  <!-- CLIENTES (admin) -->
-  <section id="tab-clientes" class="tab">
-    <div class="card">
-      <h2>Novo cliente</h2>
-      <form id="form-cliente-novo">
-        <div class="grid">
-          <div class="field">
-            <label>Nome</label>
-            <input type="text" id="cl-nome" required maxlength="150" />
-          </div>
-          <div class="field">
-            <label>E-mail</label>
-            <input type="email" id="cl-email" required maxlength="150" />
-          </div>
-          <div class="field">
-            <label>Senha (opcional)</label>
-            <input type="password" id="cl-senha" minlength="6" maxlength="255" />
-          </div>
-        </div>
-        <button type="submit" class="btn">Criar cliente</button>
-      </form>
-    </div>
-    <div class="card">
-      <h2>Clientes cadastrados</h2>
-      <div id="cl-result"></div>
-    </div>
-  </section>
-
-</main>
-
-<div id="toast-area"></div>
-
-<script src="/socket.io/socket.io.js"></script>
-<script>
-(function () {
-  'use strict';
-
-  var STORAGE_TOKEN = 'delivery_token';
-  var STORAGE_PRODUCTS = 'delivery_products_cache';
-
-  var state = {
-    token: sessionStorage.getItem(STORAGE_TOKEN) || null,
-    user: null,
-    statuses: [],
-    products: JSON.parse(localStorage.getItem(STORAGE_PRODUCTS) || '[]'),
-    cpPedidoId: null,
-  };
-
-  // ---------- websocket (atualização de status em tempo real) ----------
-
-  var socket = null;
-
-  function connectSocket() {
-    if (socket) socket.disconnect();
-    socket = io({ auth: { token: state.token || undefined } });
-    socket.on('pedido:status-atualizado', function (pedido) {
-      toast('Pedido #' + pedido.id + ' atualizado para "' + (pedido.status ? pedido.status.nome : '') + '"');
-
-      if (state.cpPedidoId === pedido.id) {
-        document.getElementById('cp-result').innerHTML = renderPedidoDetail(pedido);
+        --status-pendente: oklch(0.62 0.13 85);
+        --status-confirmado: oklch(0.55 0.14 250);
+        --status-em-preparo: oklch(0.62 0.16 55);
+        --status-saiu: oklch(0.52 0.18 300);
+        --status-entregue: oklch(0.55 0.15 150);
+        --status-cancelado: oklch(0.55 0.21 25);
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        font-family:
+          'DM Sans',
+          -apple-system,
+          BlinkMacSystemFont,
+          'Segoe UI',
+          Roboto,
+          sans-serif;
+        background: var(--background);
+        color: var(--foreground);
+        -webkit-font-smoothing: antialiased;
+      }
+      h1,
+      h2,
+      h3 {
+        font-family: 'Bricolage Grotesque', 'DM Sans', sans-serif;
+        margin: 0;
+      }
+      a {
+        color: inherit;
+        text-decoration: none;
+      }
+      img {
+        max-width: 100%;
+        display: block;
       }
 
-      var activeTab = document.querySelector('nav button.active');
-      if (activeTab && activeTab.dataset.tab === 'meus-pedidos') loadMyOrders();
-      if (activeTab && activeTab.dataset.tab === 'todos-pedidos') loadAllOrders();
-    });
-  }
-
-  // ---------- helpers ----------
-
-  function escapeHtml(value) {
-    return String(value == null ? '' : value).replace(/[&<>"']/g, function (c) {
-      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
-    });
-  }
-
-  function formatMoney(value) {
-    var n = Number(value);
-    return isNaN(n) ? value : 'R$ ' + n.toFixed(2);
-  }
-
-  function formatDate(value) {
-    if (!value) return '';
-    var d = new Date(value);
-    if (isNaN(d.getTime())) return value;
-    return d.toLocaleString('pt-BR');
-  }
-
-  function toast(message, kind) {
-    var area = document.getElementById('toast-area');
-    var el = document.createElement('div');
-    el.className = 'toast ' + (kind === 'err' ? 'err' : 'ok');
-    el.textContent = message;
-    area.appendChild(el);
-    setTimeout(function () { el.remove(); }, 4500);
-  }
-
-  function api(path, options) {
-    options = options || {};
-    var headers = Object.assign({ 'Content-Type': 'application/json' }, options.headers || {});
-    if (state.token) headers.Authorization = 'Bearer ' + state.token;
-    return fetch(path, Object.assign({}, options, { headers: headers }))
-      .then(function (res) {
-        if (res.status === 204) return null;
-        return res.json().catch(function () { return null; }).then(function (body) {
-          if (!res.ok) {
-            var message = (body && (Array.isArray(body.message) ? body.message.join(', ') : body.message)) || res.statusText;
-            var err = new Error(message);
-            err.status = res.status;
-            throw err;
-          }
-          return body;
-        });
-      });
-  }
-
-  function setToken(token) {
-    state.token = token;
-    if (token) sessionStorage.setItem(STORAGE_TOKEN, token);
-    else sessionStorage.removeItem(STORAGE_TOKEN);
-  }
-
-  function cacheProducts(products) {
-    state.products = products;
-    localStorage.setItem(STORAGE_PRODUCTS, JSON.stringify(products));
-    renderProductsDatalist();
-  }
-
-  // ---------- tabs ----------
-
-  function showTab(name) {
-    document.querySelectorAll('nav button').forEach(function (btn) {
-      btn.classList.toggle('active', btn.dataset.tab === name);
-    });
-    document.querySelectorAll('section.tab').forEach(function (sec) {
-      sec.classList.toggle('active', sec.id === 'tab-' + name);
-    });
-    if (name === 'meus-pedidos') loadStatuses().then(loadMyOrders);
-    if (name === 'todos-pedidos') loadStatuses().then(loadAllOrders);
-    if (name === 'produtos') loadProducts();
-    if (name === 'clientes') loadClients();
-  }
-
-  document.getElementById('nav').addEventListener('click', function (e) {
-    var btn = e.target.closest('button[data-tab]');
-    if (!btn) return;
-    if (btn.classList.contains('hidden')) return;
-    showTab(btn.dataset.tab);
-  });
-
-  // ---------- auth ----------
-
-  function renderAuthUi() {
-    var authStatus = document.getElementById('auth-status');
-    var deslogado = document.getElementById('conta-deslogado');
-    var logado = document.getElementById('conta-logado');
-    var authOnly = document.querySelectorAll('.auth-only');
-    var adminOnly = document.querySelectorAll('.admin-only');
-
-    if (state.user) {
-      authStatus.innerHTML = 'Logado como <strong>' + escapeHtml(state.user.nome) + '</strong> (' + escapeHtml(state.user.email) + ') <span class="badge">' + escapeHtml(state.user.role) + '</span>';
-      deslogado.classList.add('hidden');
-      logado.classList.remove('hidden');
-      document.getElementById('conta-info').innerHTML =
-        '<p><strong>Nome:</strong> ' + escapeHtml(state.user.nome) + '<br/>' +
-        '<strong>E-mail:</strong> ' + escapeHtml(state.user.email) + '<br/>' +
-        '<strong>Papel:</strong> ' + escapeHtml(state.user.role) + '</p>';
-      authOnly.forEach(function (el) { el.classList.remove('hidden'); });
-      if (state.user.role === 'admin') {
-        adminOnly.forEach(function (el) { el.classList.remove('hidden'); });
-      } else {
-        adminOnly.forEach(function (el) { el.classList.add('hidden'); });
+      .wrap {
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 0 1rem;
       }
-    } else {
-      authStatus.textContent = 'Não autenticado';
-      deslogado.classList.remove('hidden');
-      logado.classList.add('hidden');
-      authOnly.forEach(function (el) { el.classList.add('hidden'); });
-      adminOnly.forEach(function (el) { el.classList.add('hidden'); });
-      var activeTab = document.querySelector('nav button.active');
-      if (activeTab && (activeTab.classList.contains('auth-only') || activeTab.classList.contains('admin-only'))) {
-        showTab('novo-pedido');
+
+      header.topbar {
+        position: sticky;
+        top: 0;
+        z-index: 40;
+        border-bottom: 1px solid var(--border);
+        background: color-mix(in oklch, var(--background) 90%, transparent);
+        backdrop-filter: blur(6px);
       }
-    }
-  }
+      header.topbar .bar {
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 0 1rem;
+        height: 4rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.5rem;
+      }
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        cursor: pointer;
+        border: none;
+        background: none;
+        padding: 0;
+      }
+      .brand .logo {
+        width: 2.25rem;
+        height: 2.25rem;
+        border-radius: 999px;
+        background: var(--primary);
+        color: var(--primary-foreground);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+      .brand .name {
+        font-family: 'Bricolage Grotesque', sans-serif;
+        font-size: 1.15rem;
+        font-weight: 700;
+        letter-spacing: -0.01em;
+      }
 
-  function loadMe() {
-    if (!state.token) { state.user = null; renderAuthUi(); return Promise.resolve(); }
-    return api('/auth/me')
-      .then(function (user) { state.user = user; renderAuthUi(); })
-      .catch(function () { setToken(null); state.user = null; renderAuthUi(); });
-  }
+      .topnav {
+        display: flex;
+        align-items: center;
+        gap: 0.15rem;
+        flex-wrap: wrap;
+      }
 
-  document.getElementById('form-login').addEventListener('submit', function (e) {
-    e.preventDefault();
-    var email = document.getElementById('login-email').value;
-    var senha = document.getElementById('login-senha').value;
-    api('/auth/login', { method: 'POST', body: JSON.stringify({ email: email, senha: senha }) })
-      .then(function (res) {
-        setToken(res.accessToken);
-        return loadMe();
-      })
-      .then(function () { connectSocket(); toast('Login efetuado com sucesso'); showTab('conta'); })
-      .catch(function (err) { toast(err.message, 'err'); });
-  });
+      .btn-primary,
+      .btn-outline,
+      .btn-ghost {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.4rem;
+        border-radius: 999px;
+        font-weight: 600;
+        font-size: 0.85rem;
+        cursor: pointer;
+        border: none;
+        white-space: nowrap;
+      }
+      .btn-primary {
+        background: var(--primary);
+        color: var(--primary-foreground);
+        padding: 0.6rem 1.3rem;
+        transition:
+          opacity 0.15s,
+          transform 0.15s;
+      }
+      .btn-primary:hover {
+        opacity: 0.9;
+      }
+      .btn-primary:active {
+        transform: scale(0.98);
+      }
+      .btn-primary:disabled {
+        opacity: 0.5;
+        pointer-events: none;
+      }
+      .btn-outline {
+        background: var(--card);
+        color: var(--foreground);
+        border: 1.5px solid var(--border);
+        padding: 0.6rem 1.3rem;
+        transition: background 0.15s;
+      }
+      .btn-outline:hover {
+        background: var(--secondary);
+      }
+      .btn-ghost {
+        background: transparent;
+        color: var(--muted-foreground);
+        padding: 0.5rem 0.85rem;
+        transition: background 0.15s;
+      }
+      .btn-ghost:hover {
+        background: var(--secondary);
+        color: var(--foreground);
+      }
+      .btn-ghost.icon {
+        padding: 0.5rem;
+      }
+      .btn-danger-text:hover {
+        color: var(--destructive);
+      }
+      button.small {
+        padding: 0.35rem 0.55rem;
+        font-size: 0.78rem;
+      }
+      button.circle {
+        width: 2rem;
+        height: 2rem;
+        border-radius: 999px;
+        border: none;
+        background: transparent;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+      }
+      button.circle:hover {
+        background: var(--secondary);
+      }
+      button.circle:disabled {
+        opacity: 0.35;
+        pointer-events: none;
+      }
 
-  document.getElementById('form-registro').addEventListener('submit', function (e) {
-    e.preventDefault();
-    var nome = document.getElementById('reg-nome').value;
-    var email = document.getElementById('reg-email').value;
-    var senha = document.getElementById('reg-senha').value;
-    api('/auth/register', { method: 'POST', body: JSON.stringify({ nome: nome, email: email, senha: senha }) })
-      .then(function (res) {
-        setToken(res.accessToken);
-        return loadMe();
-      })
-      .then(function () { connectSocket(); toast('Cliente registrado e autenticado'); showTab('conta'); e.target.reset(); })
-      .catch(function (err) { toast(err.message, 'err'); });
-  });
+      .cart-link {
+        position: relative;
+      }
+      .cart-badge {
+        position: absolute;
+        top: -0.15rem;
+        right: -0.15rem;
+        min-width: 1.2rem;
+        height: 1.2rem;
+        border-radius: 999px;
+        background: var(--primary);
+        color: var(--primary-foreground);
+        font-size: 0.65rem;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0 0.25rem;
+      }
 
-  document.getElementById('btn-logout').addEventListener('click', function () {
-    setToken(null);
-    state.user = null;
-    renderAuthUi();
-    connectSocket();
-    toast('Sessão encerrada');
-  });
+      main.page {
+        min-height: calc(100vh - 4rem);
+      }
+      .tab {
+        display: none;
+      }
+      .tab.active {
+        display: block;
+      }
 
-  // ---------- pedidos: novo pedido (público) ----------
+      .hero {
+        position: relative;
+        overflow: hidden;
+      }
+      .hero img {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+      .hero::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        z-index: 0;
+        pointer-events: none;
+        background: linear-gradient(
+          to right,
+          oklch(0.28 0.045 45 / 80%),
+          oklch(0.28 0.045 45 / 45%),
+          transparent
+        );
+      }
+      .hero .inner {
+        position: relative;
+        z-index: 1;
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 4rem 1rem 5rem;
+      }
+      .hero h1 {
+        max-width: 32rem;
+        font-size: 2.4rem;
+        font-weight: 800;
+        color: var(--primary-foreground);
+        line-height: 1.1;
+      }
+      .hero p {
+        max-width: 26rem;
+        margin-top: 0.75rem;
+        color: oklch(0.99 0.008 78 / 85%);
+      }
+      .hero .btn-primary {
+        margin-top: 1.5rem;
+      }
 
-  function renderProductsDatalist() {
-    var hint = document.getElementById('np-produtos-hint');
-    var list = document.getElementById('produtos-list');
-    list.innerHTML = state.products.map(function (p) {
-      return '<option value="' + p.id + '">' + escapeHtml(p.nome) + ' - ' + formatMoney(p.preco) + '</option>';
-    }).join('');
-    if (state.products.length) {
-      hint.innerHTML = 'Produtos disponíveis: ' + state.products.map(function (p) {
-        return '<span class="pill">#' + p.id + ' ' + escapeHtml(p.nome) + ' (' + formatMoney(p.preco) + ')</span>';
-      }).join(' ');
-    } else {
-      hint.textContent = 'Nenhum produto cadastrado ainda.';
-    }
-  }
+      section.content {
+        padding: 2.5rem 1rem;
+      }
+      .section-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 1.25rem;
+        gap: 0.5rem;
+      }
+      .section-head h2 {
+        font-size: 1.5rem;
+        font-weight: 700;
+      }
 
-  function addItemRow(produtoId, quantidade) {
-    var container = document.getElementById('np-itens');
-    var row = document.createElement('div');
-    row.className = 'item-row';
-    row.innerHTML =
-      '<div class="field"><label>Produto (ID)</label>' +
-      '<input type="number" min="1" class="np-item-produto" list="produtos-list" required value="' + (produtoId || '') + '" /></div>' +
-      '<div class="field"><label>Quantidade</label>' +
-      '<input type="number" min="1" class="np-item-qtd" required value="' + (quantidade || 1) + '" /></div>' +
-      '<button type="button" class="btn secondary small np-remove-item">remover</button>';
-    row.querySelector('.np-remove-item').addEventListener('click', function () {
-      if (document.querySelectorAll('.item-row').length > 1) row.remove();
-    });
-    container.appendChild(row);
-  }
-  addItemRow();
+      .grid-products {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1rem;
+      }
+      @media (min-width: 640px) {
+        .grid-products {
+          grid-template-columns: repeat(3, 1fr);
+        }
+      }
+      @media (min-width: 1024px) {
+        .grid-products {
+          grid-template-columns: repeat(4, 1fr);
+        }
+      }
 
-  document.getElementById('np-add-item').addEventListener('click', function () { addItemRow(); });
+      .card-surface {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 1rem;
+        box-shadow: 0 1px 3px oklch(0.3 0.05 45 / 6%);
+      }
+      .product-card {
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+      .product-card .thumb {
+        position: relative;
+        aspect-ratio: 4 / 3;
+        overflow: hidden;
+        background: var(--secondary);
+      }
+      .product-card .thumb img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transition:
+          opacity 0.15s,
+          filter 0.15s;
+      }
+      .product-card .thumb img.out {
+        opacity: 0.4;
+        filter: grayscale(1);
+      }
+      .stock-tag {
+        position: absolute;
+        top: 0.65rem;
+        left: 0.65rem;
+        border-radius: 999px;
+        padding: 0.2rem 0.6rem;
+        font-size: 0.68rem;
+        font-weight: 700;
+      }
+      .stock-tag.out {
+        background: var(--destructive);
+        color: var(--destructive-foreground);
+      }
+      .stock-tag.low {
+        background: var(--status-pendente);
+        color: var(--primary-foreground);
+      }
+      .product-card .body {
+        display: flex;
+        flex: 1;
+        flex-direction: column;
+        gap: 0.65rem;
+        padding: 0.9rem;
+      }
+      .product-card h3 {
+        font-size: 0.95rem;
+        font-weight: 600;
+        font-family: 'DM Sans', sans-serif;
+      }
+      .product-card .price {
+        margin-top: 0.15rem;
+        font-family: 'Bricolage Grotesque', sans-serif;
+        font-size: 1.05rem;
+        font-weight: 700;
+        color: var(--primary);
+      }
+      .qty-stepper {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border-radius: 999px;
+        border: 1px solid var(--border);
+        padding: 0.15rem 0.3rem;
+      }
+      .qty-stepper span {
+        font-size: 0.85rem;
+        font-weight: 700;
+      }
 
-  document.getElementById('form-novo-pedido').addEventListener('submit', function (e) {
-    e.preventDefault();
-    var nome = document.getElementById('np-nome').value.trim();
-    var email = document.getElementById('np-email').value.trim();
-    var itens = Array.prototype.map.call(document.querySelectorAll('.item-row'), function (row) {
-      return {
-        produtoId: Number(row.querySelector('.np-item-produto').value),
-        quantidade: Number(row.querySelector('.np-item-qtd').value),
-      };
-    });
-    var payload = { cliente: { email: email }, itens: itens };
-    if (nome) payload.cliente.nome = nome;
+      .empty-state {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 3rem 1.5rem;
+        text-align: center;
+      }
+      .empty-state .muted {
+        color: var(--muted-foreground);
+        font-size: 0.9rem;
+      }
+      .skeleton {
+        background: var(--muted);
+        border-radius: 0.5rem;
+        animation: pulse 1.4s ease-in-out infinite;
+      }
+      @keyframes pulse {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.5;
+        }
+      }
 
-    api('/orders', { method: 'POST', body: JSON.stringify(payload) })
-      .then(function (pedido) {
-        toast('Pedido #' + pedido.id + ' criado com sucesso');
-        var card = document.getElementById('np-result-card');
-        card.classList.remove('hidden');
-        document.getElementById('np-result').innerHTML = renderPedidoDetail(pedido);
-      })
-      .catch(function (err) { toast(err.message, 'err'); });
-  });
+      label.field-label {
+        display: block;
+      }
+      label.field-label span.lbl {
+        display: block;
+        margin-bottom: 0.3rem;
+        font-size: 0.82rem;
+        font-weight: 500;
+      }
+      label.field-label span.lbl.sm {
+        font-size: 0.75rem;
+        color: var(--muted-foreground);
+        font-weight: 500;
+      }
+      .input-field,
+      select.input-field {
+        width: 100%;
+        border-radius: 0.75rem;
+        border: 1px solid var(--input);
+        background: var(--card);
+        padding: 0.6rem 0.85rem;
+        font-size: 0.875rem;
+        color: var(--foreground);
+        font-family: inherit;
+      }
+      .input-field:focus {
+        outline: 2px solid var(--ring);
+        outline-offset: 1px;
+      }
+      .req {
+        color: var(--destructive);
+      }
 
-  // ---------- pedidos: consulta pública ----------
+      .badge-status {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        border-radius: 999px;
+        padding: 0.28rem 0.65rem;
+        font-size: 0.72rem;
+        font-weight: 700;
+      }
+      .badge-status .dot {
+        width: 0.4rem;
+        height: 0.4rem;
+        border-radius: 999px;
+        background: currentColor;
+      }
+      .st-pendente {
+        background: color-mix(
+          in oklch,
+          var(--status-pendente) 15%,
+          transparent
+        );
+        color: var(--status-pendente);
+      }
+      .st-confirmado {
+        background: color-mix(
+          in oklch,
+          var(--status-confirmado) 15%,
+          transparent
+        );
+        color: var(--status-confirmado);
+      }
+      .st-em_preparo {
+        background: color-mix(
+          in oklch,
+          var(--status-em-preparo) 15%,
+          transparent
+        );
+        color: var(--status-em-preparo);
+      }
+      .st-saiu_para_entrega {
+        background: color-mix(in oklch, var(--status-saiu) 15%, transparent);
+        color: var(--status-saiu);
+      }
+      .st-entregue {
+        background: color-mix(
+          in oklch,
+          var(--status-entregue) 15%,
+          transparent
+        );
+        color: var(--status-entregue);
+      }
+      .st-cancelado {
+        background: color-mix(
+          in oklch,
+          var(--status-cancelado) 15%,
+          transparent
+        );
+        color: var(--status-cancelado);
+      }
+      .st-default {
+        background: var(--muted);
+        color: var(--muted-foreground);
+      }
 
-  document.getElementById('form-consultar-pedido').addEventListener('submit', function (e) {
-    e.preventDefault();
-    var id = document.getElementById('cp-id').value;
-    api('/orders/' + id)
-      .then(function (pedido) {
-        state.cpPedidoId = pedido.id;
-        document.getElementById('cp-result').innerHTML = renderPedidoDetail(pedido);
-        if (socket) socket.emit('acompanhar-pedido', { pedidoId: pedido.id });
-      })
-      .catch(function (err) {
-        state.cpPedidoId = null;
-        document.getElementById('cp-result').innerHTML = '<p class="empty">' + escapeHtml(err.message) + '</p>';
-      });
-  });
+      .order-card {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem;
+        padding: 1rem;
+        transition: box-shadow 0.15s;
+      }
+      .order-card:hover {
+        box-shadow: 0 4px 14px oklch(0.3 0.05 45 / 10%);
+      }
+      .order-card .muted-line {
+        margin-top: 0.25rem;
+        font-size: 0.85rem;
+        color: var(--muted-foreground);
+      }
+      .order-total {
+        font-family: 'Bricolage Grotesque', sans-serif;
+        font-weight: 700;
+      }
 
-  function renderPedidoDetail(pedido) {
-    var itensHtml = (pedido.itens || []).map(function (item) {
-      return '<tr><td>' + escapeHtml(item.produto ? item.produto.nome : item.produtoId) + '</td>' +
-        '<td>' + item.quantidade + '</td><td>' + formatMoney(item.precoUnitario) + '</td></tr>';
-    }).join('');
-    return (
-      '<p><strong>Pedido #' + pedido.id + '</strong> · ' + escapeHtml(pedido.status ? pedido.status.nome : '') +
-      ' · ' + formatDate(pedido.data) + '</p>' +
-      '<p><strong>Cliente:</strong> ' + escapeHtml(pedido.cliente ? pedido.cliente.nome + ' (' + pedido.cliente.email + ')' : '') + '</p>' +
-      '<table><thead><tr><th>Produto</th><th>Qtd.</th><th>Preço unit.</th></tr></thead><tbody>' +
-      (itensHtml || '<tr><td colspan="3" class="empty">Sem itens</td></tr>') +
-      '</tbody></table>' +
-      '<p><strong>Total: ' + formatMoney(pedido.valorTotal) + '</strong></p>'
-    );
-  }
+      .filters-card {
+        display: grid;
+        gap: 0.75rem;
+        padding: 1rem;
+        grid-template-columns: 1fr;
+      }
+      @media (min-width: 640px) {
+        .filters-card.f2 {
+          grid-template-columns: repeat(2, 1fr);
+        }
+        .filters-card.f3 {
+          grid-template-columns: repeat(3, 1fr);
+        }
+        .filters-card.f4 {
+          grid-template-columns: repeat(4, 1fr);
+        }
+      }
 
-  // ---------- status de pedido ----------
+      .cart-row {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.75rem;
+      }
+      .cart-row img {
+        width: 4rem;
+        height: 4rem;
+        border-radius: 0.75rem;
+        object-fit: cover;
+        flex-shrink: 0;
+      }
+      .cart-row .name {
+        font-weight: 600;
+      }
+      .cart-row .unit {
+        font-size: 0.85rem;
+        color: var(--muted-foreground);
+      }
+      .cart-row .lineTotal {
+        width: 5.5rem;
+        text-align: right;
+        font-weight: 600;
+      }
 
-  function loadStatuses() {
-    if (!state.token) return Promise.resolve([]);
-    return api('/orders-status').then(function (statuses) {
-      state.statuses = statuses;
-      ['mp-status', 'tp-status'].forEach(function (selectId) {
-        var select = document.getElementById(selectId);
-        var current = select.value;
-        select.innerHTML = '<option value="">Todos</option>' + statuses.map(function (s) {
-          return '<option value="' + s.id + '">' + escapeHtml(s.nome) + '</option>';
-        }).join('');
-        select.value = current;
-      });
-      return statuses;
-    }).catch(function (err) { toast(err.message, 'err'); return []; });
-  }
+      .auth-card {
+        width: 100%;
+        max-width: 24rem;
+        padding: 1.5rem;
+      }
+      .auth-toggle {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        background: var(--secondary);
+        border-radius: 999px;
+        padding: 0.25rem;
+        margin-bottom: 1.25rem;
+      }
+      .auth-toggle button {
+        border: none;
+        background: transparent;
+        border-radius: 999px;
+        padding: 0.55rem 0;
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: var(--muted-foreground);
+        cursor: pointer;
+      }
+      .auth-toggle button.active {
+        background: var(--card);
+        color: var(--foreground);
+        box-shadow: 0 1px 3px oklch(0.3 0.05 45 / 8%);
+      }
+      .auth-page {
+        min-height: calc(100vh - 4rem);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 2.5rem 1rem;
+        gap: 1rem;
+      }
 
-  function statusSelectHtml(currentId) {
-    return '<select class="status-changer">' + state.statuses.map(function (s) {
-      return '<option value="' + s.id + '"' + (s.id === currentId ? ' selected' : '') + '>' + escapeHtml(s.nome) + '</option>';
-    }).join('') + '</select>';
-  }
+      .timeline {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+      }
+      .timeline li {
+        display: flex;
+        gap: 0.75rem;
+      }
+      .timeline .col {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+      .step-dot {
+        width: 2rem;
+        height: 2rem;
+        flex-shrink: 0;
+        border-radius: 999px;
+        border: 2px solid var(--border);
+        background: var(--card);
+        color: var(--muted-foreground);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.75rem;
+        font-weight: 700;
+      }
+      .step-dot.done {
+        border-color: var(--status-entregue);
+        background: var(--status-entregue);
+        color: var(--primary-foreground);
+      }
+      .step-dot.current {
+        border-color: var(--primary);
+        background: var(--primary);
+        color: var(--primary-foreground);
+      }
+      .step-line {
+        width: 2px;
+        height: 2rem;
+        background: var(--border);
+      }
+      .step-line.done {
+        background: var(--status-entregue);
+      }
+      .step-body {
+        padding-bottom: 1rem;
+      }
+      .step-body p.step-title {
+        font-weight: 600;
+      }
+      .step-body p.step-title.current {
+        color: var(--primary);
+      }
+      .step-body p.step-title.muted {
+        color: var(--muted-foreground);
+      }
+      .step-body p.step-sub {
+        font-size: 0.85rem;
+        color: var(--muted-foreground);
+      }
+      .cancel-banner {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 1rem;
+        border-radius: 0.75rem;
+        background: color-mix(
+          in oklch,
+          var(--status-cancelado) 10%,
+          transparent
+        );
+        color: var(--status-cancelado);
+      }
 
-  // ---------- meus pedidos ----------
+      table.data-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.85rem;
+      }
+      table.data-table th,
+      table.data-table td {
+        text-align: left;
+        padding: 0.65rem 0.9rem;
+        vertical-align: middle;
+      }
+      table.data-table thead th {
+        color: var(--muted-foreground);
+        font-weight: 600;
+        border-bottom: 1px solid var(--border);
+      }
+      table.data-table tbody tr {
+        border-bottom: 1px solid var(--border);
+      }
+      table.data-table tbody tr:last-child {
+        border-bottom: none;
+      }
+      .table-wrap {
+        overflow-x: auto;
+      }
+      .actions-right {
+        display: flex;
+        justify-content: flex-end;
+        gap: 0.25rem;
+      }
+      .role-pill {
+        border-radius: 999px;
+        padding: 0.15rem 0.55rem;
+        font-size: 0.72rem;
+        font-weight: 700;
+      }
+      .role-admin {
+        background: color-mix(in oklch, var(--primary) 15%, transparent);
+        color: var(--primary);
+      }
+      .role-cliente {
+        background: var(--muted);
+        color: var(--muted-foreground);
+      }
 
-  function loadMyOrders() {
-    var params = new URLSearchParams();
-    var statusId = document.getElementById('mp-status').value;
-    var dataInicio = document.getElementById('mp-data-inicio').value;
-    var dataFim = document.getElementById('mp-data-fim').value;
-    if (statusId) params.set('statusId', statusId);
-    if (dataInicio) params.set('dataInicio', dataInicio);
-    if (dataFim) params.set('dataFim', dataFim);
+      .admin-subnav {
+        display: flex;
+        gap: 0.15rem;
+        overflow-x: auto;
+        background: var(--secondary);
+        border-radius: 999px;
+        padding: 0.25rem;
+        margin-bottom: 1.5rem;
+      }
+      .admin-subnav button {
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        border: none;
+        background: transparent;
+        border-radius: 999px;
+        padding: 0.55rem 1rem;
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: var(--foreground);
+        cursor: pointer;
+      }
+      .admin-subnav button.active {
+        background: var(--card);
+        box-shadow: 0 1px 3px oklch(0.3 0.05 45 / 8%);
+      }
 
-    api('/orders/me?' + params.toString())
-      .then(function (pedidos) {
-        document.getElementById('mp-result').innerHTML = renderOrdersTable(pedidos, false);
-      })
-      .catch(function (err) { toast(err.message, 'err'); });
-  }
+      .pagenav {
+        display: flex;
+        gap: 0.15rem;
+        overflow-x: auto;
+        padding: 0.85rem 0;
+        border-bottom: 1px solid var(--border);
+      }
+      .pagenav .wrap {
+        display: flex;
+        gap: 0.15rem;
+      }
+      .pagenav button {
+        flex-shrink: 0;
+        border: 1px solid transparent;
+        background: transparent;
+        border-radius: 999px;
+        padding: 0.5rem 0.9rem;
+        font-size: 0.83rem;
+        font-weight: 600;
+        color: var(--muted-foreground);
+        cursor: pointer;
+      }
+      .pagenav button.active {
+        background: var(--secondary);
+        color: var(--foreground);
+        border-color: var(--border);
+      }
 
-  document.getElementById('form-meus-pedidos').addEventListener('submit', function (e) {
-    e.preventDefault();
-    loadMyOrders();
-  });
+      form.stack {
+        display: flex;
+        flex-direction: column;
+        gap: 0.85rem;
+      }
+      .form-card {
+        padding: 1.25rem;
+        margin-bottom: 1.25rem;
+      }
+      .form-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 0.75rem;
+      }
+      .form-head h3 {
+        font-size: 1.05rem;
+        font-weight: 700;
+      }
+      .form-grid {
+        display: grid;
+        gap: 0.85rem;
+        grid-template-columns: 1fr;
+      }
+      @media (min-width: 640px) {
+        .form-grid.g2 {
+          grid-template-columns: repeat(2, 1fr);
+        }
+        .form-grid.g3 {
+          grid-template-columns: repeat(3, 1fr);
+        }
+      }
+      .form-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 0.5rem;
+        margin-top: 1rem;
+      }
+      .hint {
+        color: var(--muted-foreground);
+        font-size: 0.85rem;
+      }
 
-  // ---------- todos os pedidos (admin) ----------
+      footer.site-footer {
+        border-top: 1px solid var(--border);
+        padding: 2rem 1rem;
+        text-align: center;
+        font-size: 0.85rem;
+        color: var(--muted-foreground);
+      }
+      footer.site-footer a {
+        text-decoration: underline;
+      }
 
-  function loadAllOrders() {
-    var params = new URLSearchParams();
-    var statusId = document.getElementById('tp-status').value;
-    var clienteId = document.getElementById('tp-cliente-id').value;
-    var dataInicio = document.getElementById('tp-data-inicio').value;
-    var dataFim = document.getElementById('tp-data-fim').value;
-    if (statusId) params.set('statusId', statusId);
-    if (clienteId) params.set('clienteId', clienteId);
-    if (dataInicio) params.set('dataInicio', dataInicio);
-    if (dataFim) params.set('dataFim', dataFim);
+      #toast-area {
+        position: fixed;
+        bottom: 1rem;
+        right: 1rem;
+        left: 1rem;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 0.5rem;
+        z-index: 100;
+      }
+      .toast {
+        max-width: 320px;
+        padding: 0.7rem 1rem;
+        border-radius: 0.75rem;
+        font-size: 0.85rem;
+        color: #fff;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+      }
+      .toast.ok {
+        background: var(--status-entregue);
+      }
+      .toast.err {
+        background: var(--destructive);
+      }
 
-    api('/orders?' + params.toString())
-      .then(function (pedidos) {
-        document.getElementById('tp-result').innerHTML = renderOrdersTable(pedidos, true);
-        document.querySelectorAll('#tp-result .update-status-btn').forEach(function (btn) {
-          btn.addEventListener('click', function () {
-            var id = btn.dataset.id;
-            var select = btn.closest('tr').querySelector('.status-changer');
-            api('/orders/' + id + '/status', { method: 'PATCH', body: JSON.stringify({ statusId: Number(select.value) }) })
-              .then(function () { toast('Status do pedido #' + id + ' atualizado'); loadAllOrders(); })
-              .catch(function (err) { toast(err.message, 'err'); });
-          });
-        });
-      })
-      .catch(function (err) { toast(err.message, 'err'); });
-  }
+      .hidden {
+        display: none !important;
+      }
+      .item-row {
+        display: grid;
+        grid-template-columns: 2fr 1fr auto;
+        gap: 0.5rem;
+        align-items: end;
+        margin-bottom: 0.5rem;
+      }
+      .icon {
+        width: 1rem;
+        height: 1rem;
+        flex-shrink: 0;
+      }
+      .icon.lg {
+        width: 2.5rem;
+        height: 2.5rem;
+      }
+      .spin {
+        animation: spin 1s linear infinite;
+      }
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+    </style>
+  </head>
+  <body>
 
-  document.getElementById('form-todos-pedidos').addEventListener('submit', function (e) {
-    e.preventDefault();
-    loadAllOrders();
-  });
+    <header class='topbar'>
+      <div class='bar'>
+        <button class='brand' data-tab='cardapio'>
+          <span class='logo'>
+            <svg class='icon' viewBox='0 0 24 24' fill='currentColor'><rect x='8' y='3' width='1.8' height='8' rx='0.9'/><rect x='12.1' y='3' width='1.8' height='8' rx='0.9'/><rect x='16.2' y='3' width='1.8' height='8' rx='0.9'/><rect x='12.1' y='10' width='1.8' height='11' rx='0.9'/></svg>
+          </span>
+          <span class='name'>Sabor Express</span>
+        </button>
 
-  function renderOrdersTable(pedidos, withActions) {
-    if (!pedidos || !pedidos.length) return '<p class="empty">Nenhum pedido encontrado.</p>';
-    var rows = pedidos.map(function (p) {
-      var itensResumo = (p.itens || []).map(function (i) {
-        return (i.produto ? i.produto.nome : i.produtoId) + ' x' + i.quantidade;
-      }).join(', ');
-      return (
-        '<tr>' +
-        '<td>#' + p.id + '</td>' +
-        '<td>' + escapeHtml(p.cliente ? p.cliente.nome : '') + '<br/><span class="muted">' + escapeHtml(p.cliente ? p.cliente.email : '') + '</span></td>' +
-        '<td>' + escapeHtml(itensResumo) + '</td>' +
-        '<td>' + formatMoney(p.valorTotal) + '</td>' +
-        '<td>' + formatDate(p.data) + '</td>' +
-        '<td>' + escapeHtml(p.status ? p.status.nome : '') + '</td>' +
-        (withActions ? '<td>' + statusSelectHtml(p.status ? p.status.id : null) +
-          ' <button type="button" class="btn small update-status-btn" data-id="' + p.id + '">atualizar</button></td>' : '') +
-        '</tr>'
-      );
-    }).join('');
-    return (
-      '<table><thead><tr><th>ID</th><th>Cliente</th><th>Itens</th><th>Total</th><th>Data</th><th>Status</th>' +
-      (withActions ? '<th>Ação</th>' : '') + '</tr></thead><tbody>' + rows + '</tbody></table>'
-    );
-  }
+        <nav class='topnav'>
+          <a
+            class='btn-ghost auth-only hidden'
+            data-tab='meus-pedidos'
+            style='align-items:center;'
+          >
+            <svg
+              class='icon'
+              viewBox='0 0 24 24'
+              fill='none'
+              stroke='currentColor'
+              stroke-width='2'
+              stroke-linecap='round'
+              stroke-linejoin='round'
+            ><path
+                d='M8 3H6a2 2 0 0 0-2 2v16l4-2 4 2 4-2 4 2V5a2 2 0 0 0-2-2h-2'
+              /><path d='M12 3v6M9 6h6' /></svg>
+            Meus pedidos
+          </a>
+          <a class='btn-ghost admin-only hidden' data-tab='admin'>
+            <svg
+              class='icon'
+              viewBox='0 0 24 24'
+              fill='none'
+              stroke='currentColor'
+              stroke-width='2'
+              stroke-linecap='round'
+              stroke-linejoin='round'
+            ><path d='M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z' /></svg>
+            Admin
+          </a>
+          <a
+            class='btn-ghost cart-link'
+            data-tab='carrinho'
+            aria-label='Carrinho'
+          >
+            <svg
+              class='icon'
+              viewBox='0 0 24 24'
+              fill='none'
+              stroke='currentColor'
+              stroke-width='2'
+              stroke-linecap='round'
+              stroke-linejoin='round'
+            ><path
+                d='M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z'
+              /><path d='M3 6h18M16 10a4 4 0 0 1-8 0' /></svg>
+            <span class='cart-badge hidden' id='cart-badge'>0</span>
+          </a>
+          <span id='auth-slot'></span>
+        </nav>
+      </div>
+    </header>
 
-  // ---------- produtos (admin) ----------
+    <main class='page'>
 
-  function loadProducts() {
-    api('/products')
-      .then(function (produtos) {
-        cacheProducts(produtos);
-        document.getElementById('pr-result').innerHTML = renderProductsTable(produtos);
-        bindProductActions();
-      })
-      .catch(function (err) { toast(err.message, 'err'); });
-  }
+      <!-- CARDÁPIO -->
+      <section id='tab-cardapio' class='tab active'>
+        <div class='hero'>
+          <img
+            src='/static/img/hero-food.jpg'
+            alt='Prato delicioso do Sabor Express'
+          />
+          <div class='inner'>
+            <h1>Comida boa, entregue quentinha</h1>
+            <p>Escolha no cardápio, finalize em segundos e acompanhe seu pedido
+              em tempo real.</p>
+            <a href='#produtos-grid' class='btn-primary'>Ver cardápio</a>
+          </div>
+        </div>
 
-  function renderProductsTable(produtos) {
-    if (!produtos.length) return '<p class="empty">Nenhum produto cadastrado.</p>';
-    var rows = produtos.map(function (p) {
-      return (
-        '<tr data-id="' + p.id + '">' +
-        '<td>#' + p.id + '</td>' +
-        '<td><input type="text" class="pr-edit-nome" value="' + escapeHtml(p.nome) + '" /></td>' +
-        '<td><input type="number" step="0.01" min="0.01" class="pr-edit-preco" value="' + Number(p.preco).toFixed(2) + '" /></td>' +
-        '<td class="row-actions">' +
-        '<button type="button" class="btn small pr-save" data-id="' + p.id + '">salvar</button>' +
-        '<button type="button" class="btn small danger pr-delete" data-id="' + p.id + '">excluir</button>' +
-        '</td></tr>'
-      );
-    }).join('');
-    return '<table><thead><tr><th>ID</th><th>Nome</th><th>Preço</th><th>Ações</th></tr></thead><tbody>' + rows + '</tbody></table>';
-  }
+        <section class='content wrap'>
+          <div class='section-head'>
+            <h2>Cardápio</h2>
+            <svg
+              id='pr-refresh-spin'
+              class='icon spin hidden'
+              viewBox='0 0 24 24'
+              fill='none'
+              stroke='currentColor'
+              stroke-width='2'
+              stroke-linecap='round'
+              stroke-linejoin='round'
+            ><path d='M21 12a9 9 0 1 1-2.64-6.36' /><path
+                d='M21 3v6h-6'
+              /></svg>
+          </div>
+          <div id='produtos-grid' class='grid-products'></div>
+        </section>
+      </section>
 
-  function bindProductActions() {
-    document.querySelectorAll('.pr-save').forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        var tr = btn.closest('tr');
-        var nome = tr.querySelector('.pr-edit-nome').value;
-        var preco = Number(tr.querySelector('.pr-edit-preco').value);
-        api('/products/' + btn.dataset.id, { method: 'PATCH', body: JSON.stringify({ nome: nome, preco: preco }) })
-          .then(function () { toast('Produto atualizado'); loadProducts(); })
-          .catch(function (err) { toast(err.message, 'err'); });
-      });
-    });
-    document.querySelectorAll('.pr-delete').forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        if (!confirm('Remover este produto?')) return;
-        api('/products/' + btn.dataset.id, { method: 'DELETE' })
-          .then(function () { toast('Produto removido'); loadProducts(); })
-          .catch(function (err) { toast(err.message, 'err'); });
-      });
-    });
-  }
+      <!-- CARRINHO -->
+      <section id='tab-carrinho' class='tab'>
+        <div class='content wrap' style='max-width:48rem;'>
+          <h1 style='font-size:1.5rem;font-weight:700;'>Seu carrinho</h1>
+          <div id='carrinho-body' style='margin-top:1.5rem;'></div>
+        </div>
+      </section>
 
-  document.getElementById('form-produto-novo').addEventListener('submit', function (e) {
-    e.preventDefault();
-    var nome = document.getElementById('pr-nome').value;
-    var preco = Number(document.getElementById('pr-preco').value);
-    api('/products', { method: 'POST', body: JSON.stringify({ nome: nome, preco: preco }) })
-      .then(function () { toast('Produto criado'); e.target.reset(); loadProducts(); })
-      .catch(function (err) { toast(err.message, 'err'); });
-  });
+      <!-- RASTREAR PEDIDO -->
+      <section id='tab-rastrear' class='tab'>
+        <div class='content wrap' style='max-width:40rem;'>
+          <h1 style='font-size:1.5rem;font-weight:700;'>Rastrear pedido</h1>
+          <form
+            id='form-rastrear'
+            class='card-surface'
+            style='display:flex;gap:0.75rem;align-items:end;padding:1rem;margin-top:1rem;flex-wrap:wrap;'
+          >
+            <label class='field-label' style='flex:1;min-width:10rem;'>
+              <span class='lbl'>Número do pedido</span>
+              <input
+                type='number'
+                min='1'
+                id='rp-id'
+                class='input-field'
+                required
+              />
+            </label>
+            <button type='submit' class='btn-primary'>Buscar</button>
+          </form>
+          <div id='rastrear-result' style='margin-top:1.5rem;'></div>
+        </div>
+      </section>
 
-  // ---------- clientes (admin) ----------
+      <!-- CONTA (login/registro) -->
+      <section id='tab-conta' class='tab'>
+        <div class='auth-page'>
+          <button
+            class='brand'
+            data-tab='cardapio'
+            style='margin-bottom:0.5rem;'
+          >
+            <span class='logo'>
+              <svg class='icon' viewBox='0 0 24 24' fill='currentColor'><rect x='8' y='3' width='1.8' height='8' rx='0.9'/><rect x='12.1' y='3' width='1.8' height='8' rx='0.9'/><rect x='16.2' y='3' width='1.8' height='8' rx='0.9'/><rect x='12.1' y='10' width='1.8' height='11' rx='0.9'/></svg>
+            </span>
+            <span class='name'>Sabor Express</span>
+          </button>
 
-  function loadClients() {
-    api('/clients')
-      .then(function (clientes) {
-        document.getElementById('cl-result').innerHTML = renderClientsTable(clientes);
-        bindClientActions();
-      })
-      .catch(function (err) { toast(err.message, 'err'); });
-  }
+          <div class='card-surface auth-card' id='conta-deslogado'>
+            <div class='auth-toggle'>
+              <button
+                type='button'
+                id='auth-tab-login'
+                class='active'
+              >Entrar</button>
+              <button type='button' id='auth-tab-registro'>Criar conta</button>
+            </div>
 
-  function renderClientsTable(clientes) {
-    if (!clientes.length) return '<p class="empty">Nenhum cliente cadastrado.</p>';
-    var rows = clientes.map(function (c) {
-      return (
-        '<tr data-id="' + c.id + '">' +
-        '<td>#' + c.id + '</td>' +
-        '<td><input type="text" class="cl-edit-nome" value="' + escapeHtml(c.nome) + '" /></td>' +
-        '<td><input type="email" class="cl-edit-email" value="' + escapeHtml(c.email) + '" /></td>' +
-        '<td><span class="badge">' + escapeHtml(c.role) + '</span></td>' +
-        '<td class="row-actions">' +
-        '<button type="button" class="btn small cl-save" data-id="' + c.id + '">salvar</button>' +
-        '<button type="button" class="btn small danger cl-delete" data-id="' + c.id + '">excluir</button>' +
-        '</td></tr>'
-      );
-    }).join('');
-    return '<table><thead><tr><th>ID</th><th>Nome</th><th>E-mail</th><th>Papel</th><th>Ações</th></tr></thead><tbody>' + rows + '</tbody></table>';
-  }
+            <form id='form-login' class='stack'>
+              <label class='field-label'>
+                <span class='lbl'>E-mail</span>
+                <input
+                  type='email'
+                  id='login-email'
+                  class='input-field'
+                  required
+                  placeholder='voce@email.com'
+                />
+              </label>
+              <label class='field-label'>
+                <span class='lbl'>Senha</span>
+                <input
+                  type='password'
+                  id='login-senha'
+                  class='input-field'
+                  required
+                  placeholder='••••••••'
+                />
+              </label>
+              <button
+                type='submit'
+                class='btn-primary'
+                style='width:100%;'
+              >Entrar</button>
+            </form>
 
-  function bindClientActions() {
-    document.querySelectorAll('.cl-save').forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        var tr = btn.closest('tr');
-        var nome = tr.querySelector('.cl-edit-nome').value;
-        var email = tr.querySelector('.cl-edit-email').value;
-        api('/clients/' + btn.dataset.id, { method: 'PATCH', body: JSON.stringify({ nome: nome, email: email }) })
-          .then(function () { toast('Cliente atualizado'); loadClients(); })
-          .catch(function (err) { toast(err.message, 'err'); });
-      });
-    });
-    document.querySelectorAll('.cl-delete').forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        if (!confirm('Remover este cliente?')) return;
-        api('/clients/' + btn.dataset.id, { method: 'DELETE' })
-          .then(function () { toast('Cliente removido'); loadClients(); })
-          .catch(function (err) { toast(err.message, 'err'); });
-      });
-    });
-  }
+            <form id='form-registro' class='stack hidden'>
+              <label class='field-label'>
+                <span class='lbl'>Nome</span>
+                <input
+                  type='text'
+                  id='reg-nome'
+                  class='input-field'
+                  required
+                  maxlength='150'
+                  placeholder='Seu nome'
+                />
+              </label>
+              <label class='field-label'>
+                <span class='lbl'>E-mail</span>
+                <input
+                  type='email'
+                  id='reg-email'
+                  class='input-field'
+                  required
+                  maxlength='150'
+                  placeholder='voce@email.com'
+                />
+              </label>
+              <label class='field-label'>
+                <span class='lbl'>Senha</span>
+                <input
+                  type='password'
+                  id='reg-senha'
+                  class='input-field'
+                  required
+                  minlength='6'
+                  maxlength='255'
+                  placeholder='mín. 6 caracteres'
+                />
+              </label>
+              <button
+                type='submit'
+                class='btn-primary'
+                style='width:100%;'
+              >Criar conta</button>
+            </form>
 
-  document.getElementById('form-cliente-novo').addEventListener('submit', function (e) {
-    e.preventDefault();
-    var nome = document.getElementById('cl-nome').value;
-    var email = document.getElementById('cl-email').value;
-    var senha = document.getElementById('cl-senha').value;
-    var payload = { nome: nome, email: email };
-    if (senha) payload.senha = senha;
-    api('/clients', { method: 'POST', body: JSON.stringify(payload) })
-      .then(function () { toast('Cliente criado'); e.target.reset(); loadClients(); })
-      .catch(function (err) { toast(err.message, 'err'); });
-  });
+            <p
+              class='hint'
+              style='text-align:center;margin-top:1rem;font-size:0.78rem;'
+            >
+              Você não precisa de conta para fazer pedidos — ela serve para
+              acompanhar seu histórico.
+            </p>
+          </div>
 
-  // ---------- init ----------
+          <div
+            class='card-surface auth-card hidden'
+            id='conta-logado'
+            style='text-align:center;'
+          >
+            <div id='conta-info'></div>
+            <button
+              class='btn-outline'
+              id='btn-logout'
+              style='width:100%;margin-top:1rem;'
+            >Sair</button>
+          </div>
 
-  renderProductsDatalist();
-  renderAuthUi();
-  connectSocket();
-  loadMe();
-  loadProducts();
-})();
-</script>
+          <button class='btn-ghost' data-tab='cardapio'>Voltar ao cardápio</button>
+        </div>
+      </section>
 
-</body>
+      <!-- MEUS PEDIDOS (autenticado) -->
+      <section id='tab-meus-pedidos' class='tab'>
+        <div class='content wrap' style='max-width:48rem;'>
+          <h1 style='font-size:1.5rem;font-weight:700;'>Meus pedidos</h1>
+
+          <div
+            id='mp-logged-out'
+            class='empty-state card-surface hidden'
+            style='margin-top:1rem;'
+          >
+            <svg
+              class='icon lg'
+              viewBox='0 0 24 24'
+              fill='none'
+              stroke='currentColor'
+              stroke-width='1.5'
+              stroke-linecap='round'
+              stroke-linejoin='round'
+            ><path
+                d='M8 3H6a2 2 0 0 0-2 2v16l4-2 4 2 4-2 4 2V5a2 2 0 0 0-2-2h-2'
+              /></svg>
+            <p style='font-weight:600;'>Meus pedidos</p>
+            <p class='muted'>Entre na sua conta para ver o histórico e
+              acompanhar seus pedidos.</p>
+            <button class='btn-primary' data-tab='conta'>Entrar ou criar conta</button>
+          </div>
+
+          <div id='mp-logged-in' class='hidden'>
+            <form
+              id='form-meus-pedidos'
+              class='card-surface filters-card f3'
+              style='margin-top:1rem;'
+            >
+              <label class='field-label'>
+                <span class='lbl sm'>Status</span>
+                <select id='mp-status' class='input-field'><option
+                    value=''
+                  >Todos</option></select>
+              </label>
+              <label class='field-label'>
+                <span class='lbl sm'>De</span>
+                <input type='date' id='mp-data-inicio' class='input-field' />
+              </label>
+              <label class='field-label'>
+                <span class='lbl sm'>Até</span>
+                <input type='date' id='mp-data-fim' class='input-field' />
+              </label>
+            </form>
+            <div
+              id='mp-result'
+              style='margin-top:1.25rem;display:flex;flex-direction:column;gap:0.75rem;'
+            ></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ADMIN -->
+      <section id='tab-admin' class='tab'>
+        <div class='content wrap'>
+          <div id='admin-guard' class='empty-state card-surface hidden'>
+            <svg
+              class='icon lg'
+              viewBox='0 0 24 24'
+              fill='none'
+              stroke='currentColor'
+              stroke-width='1.5'
+              stroke-linecap='round'
+              stroke-linejoin='round'
+            ><path
+                d='M12 9v4M12 17h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z'
+              /></svg>
+            <p style='font-weight:600;' id='admin-guard-title'>Área
+              administrativa</p>
+            <p class='muted' id='admin-guard-text'>Entre com uma conta de
+              administrador.</p>
+            <button
+              class='btn-primary'
+              data-tab='conta'
+              id='admin-guard-btn'
+            >Entrar</button>
+          </div>
+
+          <div id='admin-body' class='hidden'>
+            <div class='admin-subnav'>
+              <button data-admin-tab='pedidos' class='active'>Pedidos</button>
+              <button data-admin-tab='produtos'>Produtos</button>
+              <button data-admin-tab='clientes'>Clientes</button>
+            </div>
+
+            <!-- Admin > Pedidos -->
+            <div id='admin-pedidos' class='admin-tab'>
+              <div class='section-head'>
+                <h2>Pedidos</h2>
+                <span
+                  class='hint'
+                  style='display:flex;align-items:center;gap:0.4rem;'
+                >
+                  <svg
+                    class='icon'
+                    viewBox='0 0 24 24'
+                    fill='none'
+                    stroke='currentColor'
+                    stroke-width='2'
+                    stroke-linecap='round'
+                    stroke-linejoin='round'
+                    style='color:var(--status-entregue);'
+                  ><path
+                      d='M5 12.55a11 11 0 0 1 14.08 0M1.42 9a16 16 0 0 1 21.16 0M8.53 16.11a6 6 0 0 1 6.95 0M12 20h.01'
+                    /></svg>
+                  Tempo real ativo
+                </span>
+              </div>
+              <form
+                id='form-todos-pedidos'
+                class='card-surface filters-card f4'
+                style='margin-bottom:1.25rem;'
+              >
+                <label class='field-label'>
+                  <span class='lbl sm'>Status</span>
+                  <select id='tp-status' class='input-field'><option
+                      value=''
+                    >Todos</option></select>
+                </label>
+                <label class='field-label'>
+                  <span class='lbl sm'>Cliente</span>
+                  <select id='tp-cliente-id' class='input-field'><option
+                      value=''
+                    >Todos</option></select>
+                </label>
+                <label class='field-label'>
+                  <span class='lbl sm'>De</span>
+                  <input type='date' id='tp-data-inicio' class='input-field' />
+                </label>
+                <label class='field-label'>
+                  <span class='lbl sm'>Até</span>
+                  <input type='date' id='tp-data-fim' class='input-field' />
+                </label>
+              </form>
+              <div
+                id='tp-result'
+                style='display:flex;flex-direction:column;gap:0.75rem;'
+              ></div>
+            </div>
+
+            <!-- Admin > Produtos -->
+            <div id='admin-produtos' class='admin-tab hidden'>
+              <div class='section-head'>
+                <h2>Produtos</h2>
+                <button class='btn-primary' id='pr-open-create'>
+                  <svg
+                    class='icon'
+                    viewBox='0 0 24 24'
+                    fill='none'
+                    stroke='currentColor'
+                    stroke-width='2'
+                    stroke-linecap='round'
+                    stroke-linejoin='round'
+                  ><path d='M5 12h14M12 5v14' /></svg>
+                  Novo produto
+                </button>
+              </div>
+
+              <form id='form-produto' class='card-surface form-card hidden'>
+                <div class='form-head'>
+                  <h3 id='pr-form-title'>Novo produto</h3>
+                  <button
+                    type='button'
+                    class='btn-ghost icon'
+                    id='pr-form-close'
+                  >
+                    <svg
+                      class='icon'
+                      viewBox='0 0 24 24'
+                      fill='none'
+                      stroke='currentColor'
+                      stroke-width='2'
+                      stroke-linecap='round'
+                      stroke-linejoin='round'
+                    ><path d='M18 6 6 18M6 6l12 12' /></svg>
+                  </button>
+                </div>
+                <input type='hidden' id='pr-edit-id' />
+                <div class='form-grid g3'>
+                  <label class='field-label'>
+                    <span class='lbl'>Nome</span>
+                    <input
+                      type='text'
+                      id='pr-nome'
+                      class='input-field'
+                      required
+                      maxlength='150'
+                      placeholder='Ex.: X-Burger da casa'
+                    />
+                  </label>
+                  <label class='field-label'>
+                    <span class='lbl'>Preço (R$)</span>
+                    <input
+                      type='number'
+                      id='pr-preco'
+                      class='input-field'
+                      required
+                      min='0.01'
+                      step='0.01'
+                      placeholder='29.90'
+                    />
+                  </label>
+                  <label class='field-label'>
+                    <span class='lbl'>Estoque</span>
+                    <input
+                      type='number'
+                      id='pr-estoque'
+                      class='input-field'
+                      required
+                      min='0'
+                      value='0'
+                    />
+                  </label>
+                </div>
+                <div class='form-actions'>
+                  <button
+                    type='button'
+                    class='btn-outline'
+                    id='pr-form-cancel'
+                  >Cancelar</button>
+                  <button type='submit' class='btn-primary'>Salvar</button>
+                </div>
+              </form>
+
+              <div id='pr-result'></div>
+            </div>
+
+            <!-- Admin > Clientes -->
+            <div id='admin-clientes' class='admin-tab hidden'>
+              <div class='section-head'>
+                <h2>Clientes</h2>
+                <button class='btn-primary' id='cl-open-create'>
+                  <svg
+                    class='icon'
+                    viewBox='0 0 24 24'
+                    fill='none'
+                    stroke='currentColor'
+                    stroke-width='2'
+                    stroke-linecap='round'
+                    stroke-linejoin='round'
+                  ><path d='M5 12h14M12 5v14' /></svg>
+                  Novo cliente
+                </button>
+              </div>
+
+              <form id='form-cliente' class='card-surface form-card hidden'>
+                <div class='form-head'>
+                  <h3 id='cl-form-title'>Novo cliente</h3>
+                  <button
+                    type='button'
+                    class='btn-ghost icon'
+                    id='cl-form-close'
+                  >
+                    <svg
+                      class='icon'
+                      viewBox='0 0 24 24'
+                      fill='none'
+                      stroke='currentColor'
+                      stroke-width='2'
+                      stroke-linecap='round'
+                      stroke-linejoin='round'
+                    ><path d='M18 6 6 18M6 6l12 12' /></svg>
+                  </button>
+                </div>
+                <input type='hidden' id='cl-edit-id' />
+                <div class='form-grid g3'>
+                  <label class='field-label'>
+                    <span class='lbl'>Nome</span>
+                    <input
+                      type='text'
+                      id='cl-nome'
+                      class='input-field'
+                      required
+                      maxlength='150'
+                      placeholder='Nome do cliente'
+                    />
+                  </label>
+                  <label class='field-label'>
+                    <span class='lbl'>E-mail</span>
+                    <input
+                      type='email'
+                      id='cl-email'
+                      class='input-field'
+                      required
+                      maxlength='150'
+                      placeholder='cliente@email.com'
+                    />
+                  </label>
+                  <label class='field-label'>
+                    <span class='lbl' id='cl-senha-label'>Senha (opcional)</span>
+                    <input
+                      type='password'
+                      id='cl-senha'
+                      class='input-field'
+                      minlength='6'
+                      maxlength='255'
+                      placeholder='••••••••'
+                    />
+                  </label>
+                </div>
+                <div class='form-actions'>
+                  <button
+                    type='button'
+                    class='btn-outline'
+                    id='cl-form-cancel'
+                  >Cancelar</button>
+                  <button type='submit' class='btn-primary'>Salvar</button>
+                </div>
+              </form>
+
+              <div id='cl-result'></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+
+    <footer class='site-footer'>
+      Sabor Express · Delivery com acompanhamento em tempo real ·
+      <a href='#' data-tab='conta'>Entrar / Criar conta</a>
+    </footer>
+
+    <div id='toast-area'></div>
+
+    <script src='/socket.io/socket.io.js'></script>
+    <script src='/static/js/app.js'></script>
+
+  </body>
 </html>
