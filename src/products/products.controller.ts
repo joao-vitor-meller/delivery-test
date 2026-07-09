@@ -25,12 +25,12 @@ import { Auth } from '../auth/decorators/auth.decorator';
 import { Role } from '../common/enums/role.enum';
 
 @ApiTags('Products')
-@Auth(Role.ADMIN)
 @Controller('products')
 export class ProductsController {
   constructor(private readonly productsService: ProductsService) {}
 
   @Post()
+  @Auth(Role.ADMIN)
   @ApiOperation({ summary: 'Cria um novo produto (ADMIN)' })
   @ApiResponse({
     status: HttpStatus.CREATED,
@@ -46,7 +46,7 @@ export class ProductsController {
   }
 
   @Get()
-  @ApiOperation({ summary: 'Lista todos os produtos (ADMIN)' })
+  @ApiOperation({ summary: 'Lista todos os produtos (PÚBLICO)' })
   @ApiResponse({
     status: HttpStatus.OK,
     description: 'Lista de produtos',
@@ -58,6 +58,7 @@ export class ProductsController {
 
   @ApiExcludeEndpoint()
   @Get(':id')
+  @Auth(Role.ADMIN)
   @ApiOperation({ summary: 'Busca um produto pelo id (ADMIN)' })
   @ApiParam({
     name: 'id',
@@ -79,6 +80,7 @@ export class ProductsController {
 
   @ApiExcludeEndpoint()
   @Patch(':id')
+  @Auth(Role.ADMIN)
   @ApiOperation({ summary: 'Atualiza um produto existente (ADMIN)' })
   @ApiParam({
     name: 'id',
@@ -102,6 +104,7 @@ export class ProductsController {
   }
 
   @Delete(':id')
+  @Auth(Role.ADMIN)
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Remove um produto (ADMIN)' })
   @ApiParam({

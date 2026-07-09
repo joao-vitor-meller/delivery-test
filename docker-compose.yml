@@ -15,12 +15,23 @@ services:
       ADMIN_NAME: ${ADMIN_NAME:-Administrador}
       ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@delivery.com}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin123}
+      MAIL_HOST: mailpit
+      MAIL_PORT: 1025
+      MAIL_FROM: ${MAIL_FROM:-noreply@delivery.test}
     volumes:
       - .:/usr/src/app
       - /usr/src/app/node_modules
     depends_on:
       db:
         condition: service_healthy
+      mailpit:
+        condition: service_started
+
+  mailpit:
+    image: axllent/mailpit
+    ports:
+      - '8025:8025'
+      - '1025:1025'
 
   db:
     image: postgres:16-alpine

@@ -1,0 +1,939 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>{{title}}</title>
+<style>
+  :root {
+    --bg: #f4f5f7;
+    --surface: #ffffff;
+    --border: #e2e5ea;
+    --text: #1c1f26;
+    --muted: #6b7280;
+    --accent: #2563eb;
+    --accent-hover: #1d4ed8;
+    --danger: #dc2626;
+    --danger-hover: #b91c1c;
+    --success: #16a34a;
+    --radius: 8px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #14161b;
+      --surface: #1c1f26;
+      --border: #2d3138;
+      --text: #e7e9ee;
+      --muted: #9aa1ac;
+      --accent: #3b82f6;
+      --accent-hover: #60a5fa;
+      --danger: #f87171;
+      --danger-hover: #fca5a5;
+      --success: #4ade80;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+  }
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.9rem 1.5rem;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    flex-wrap: wrap;
+  }
+  header h1 {
+    font-size: 1.1rem;
+    margin: 0;
+  }
+  header h1 span { color: var(--muted); font-weight: 400; }
+  #auth-status {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-size: 0.85rem;
+    color: var(--muted);
+  }
+  #auth-status strong { color: var(--text); }
+  .badge {
+    font-size: 0.7rem;
+    padding: 0.15rem 0.5rem;
+    border-radius: 999px;
+    background: var(--accent);
+    color: #fff;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+  nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    padding: 0.75rem 1.5rem;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+  }
+  nav button {
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text);
+    padding: 0.4rem 0.8rem;
+    border-radius: 999px;
+    cursor: pointer;
+    font-size: 0.85rem;
+  }
+  nav button.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+  }
+  main {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 1.5rem;
+  }
+  section.tab { display: none; }
+  section.tab.active { display: block; }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.25rem;
+    margin-bottom: 1.25rem;
+  }
+  .card h2 {
+    margin-top: 0;
+    font-size: 1.05rem;
+  }
+  .card p.hint {
+    color: var(--muted);
+    font-size: 0.85rem;
+    margin-top: -0.5rem;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 0.75rem;
+  }
+  label {
+    display: block;
+    font-size: 0.8rem;
+    color: var(--muted);
+    margin-bottom: 0.25rem;
+  }
+  input, select {
+    width: 100%;
+    padding: 0.45rem 0.55rem;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 0.9rem;
+  }
+  .field { margin-bottom: 0.75rem; }
+  button.btn {
+    border: none;
+    background: var(--accent);
+    color: #fff;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.88rem;
+  }
+  button.btn:hover { background: var(--accent-hover); }
+  button.btn.secondary {
+    background: transparent;
+    color: var(--text);
+    border: 1px solid var(--border);
+  }
+  button.btn.danger { background: var(--danger); }
+  button.btn.danger:hover { background: var(--danger-hover); }
+  button.btn.small { padding: 0.3rem 0.6rem; font-size: 0.78rem; }
+  .row-actions { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+  .item-row {
+    display: grid;
+    grid-template-columns: 2fr 1fr auto;
+    gap: 0.5rem;
+    align-items: end;
+    margin-bottom: 0.5rem;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+  }
+  th, td {
+    text-align: left;
+    padding: 0.5rem;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  th { color: var(--muted); font-weight: 600; }
+  .muted { color: var(--muted); }
+  .empty { color: var(--muted); font-style: italic; padding: 0.5rem 0; }
+  #toast-area {
+    position: fixed;
+    bottom: 1rem;
+    right: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    z-index: 50;
+    max-width: 320px;
+  }
+  .toast {
+    padding: 0.65rem 0.9rem;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    color: #fff;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+  }
+  .toast.ok { background: var(--success); }
+  .toast.err { background: var(--danger); }
+  .hidden { display: none !important; }
+  .pill {
+    display: inline-block;
+    padding: 0.1rem 0.5rem;
+    border-radius: 999px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    font-size: 0.75rem;
+  }
+  form.inline { display: contents; }
+  .filters { display: flex; gap: 0.6rem; flex-wrap: wrap; align-items: end; margin-bottom: 1rem; }
+  .filters .field { margin-bottom: 0; min-width: 140px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Delivery App <span>· simulador de módulos</span></h1>
+  <div id="auth-status"></div>
+</header>
+
+<nav id="nav">
+  <button data-tab="novo-pedido" class="active">Novo Pedido</button>
+  <button data-tab="consultar-pedido">Consultar Pedido</button>
+  <button data-tab="conta">Conta</button>
+  <button data-tab="meus-pedidos" class="auth-only hidden">Meus Pedidos</button>
+  <button data-tab="todos-pedidos" class="admin-only hidden">Todos os Pedidos</button>
+  <button data-tab="produtos" class="admin-only hidden">Produtos</button>
+  <button data-tab="clientes" class="admin-only hidden">Clientes</button>
+</nav>
+
+<main>
+
+  <!-- NOVO PEDIDO (público) -->
+  <section id="tab-novo-pedido" class="tab active">
+    <div class="card">
+      <h2>Criar pedido</h2>
+      <p class="hint">Endpoint público <code>POST /orders</code>. Não é necessário estar autenticado. Se o e-mail informado ainda não tiver cadastro, um cliente é criado automaticamente.</p>
+      <form id="form-novo-pedido">
+        <div class="grid">
+          <div class="field">
+            <label>Nome do cliente (opcional se já cadastrado)</label>
+            <input type="text" id="np-nome" maxlength="150" placeholder="João da Silva" />
+          </div>
+          <div class="field">
+            <label>E-mail do cliente *</label>
+            <input type="email" id="np-email" maxlength="150" required placeholder="joao@email.com" />
+          </div>
+        </div>
+        <h3 style="font-size:0.9rem;margin-bottom:0.4rem;">Itens do pedido</h3>
+        <p class="hint" id="np-produtos-hint">Carregando produtos disponíveis...</p>
+        <datalist id="produtos-list"></datalist>
+        <div id="np-itens"></div>
+        <button type="button" class="btn secondary small" id="np-add-item">+ adicionar item</button>
+        <div style="margin-top:1rem;">
+          <button type="submit" class="btn">Criar pedido</button>
+        </div>
+      </form>
+    </div>
+    <div class="card hidden" id="np-result-card">
+      <h2>Pedido criado</h2>
+      <div id="np-result"></div>
+    </div>
+  </section>
+
+  <!-- CONSULTAR PEDIDO (público) -->
+  <section id="tab-consultar-pedido" class="tab">
+    <div class="card">
+      <h2>Consultar pedido por ID</h2>
+      <p class="hint">Endpoint público <code>GET /orders/:id</code>.</p>
+      <form id="form-consultar-pedido" class="filters">
+        <div class="field">
+          <label>ID do pedido</label>
+          <input type="number" min="1" id="cp-id" required />
+        </div>
+        <button type="submit" class="btn">Buscar</button>
+      </form>
+      <div id="cp-result"></div>
+    </div>
+  </section>
+
+  <!-- CONTA (login / registro) -->
+  <section id="tab-conta" class="tab">
+    <div class="card" id="conta-deslogado">
+      <h2>Entrar</h2>
+      <form id="form-login">
+        <div class="grid">
+          <div class="field">
+            <label>E-mail</label>
+            <input type="email" id="login-email" required placeholder="admin@delivery.com" />
+          </div>
+          <div class="field">
+            <label>Senha</label>
+            <input type="password" id="login-senha" required placeholder="admin123" />
+          </div>
+        </div>
+        <button type="submit" class="btn">Entrar</button>
+      </form>
+      <p class="hint">Use as credenciais do admin seedado (<code>admin@delivery.com</code> / <code>admin123</code>) ou registre um cliente novo abaixo.</p>
+    </div>
+
+    <div class="card hidden" id="conta-logado">
+      <h2>Sessão atual</h2>
+      <div id="conta-info"></div>
+      <button class="btn secondary" id="btn-logout">Sair</button>
+    </div>
+
+    <div class="card" id="conta-registro-card">
+      <h2>Registrar novo cliente</h2>
+      <p class="hint">Endpoint público <code>POST /auth/register</code>. Cria um cliente com papel "cliente" e já retorna um token.</p>
+      <form id="form-registro">
+        <div class="grid">
+          <div class="field">
+            <label>Nome</label>
+            <input type="text" id="reg-nome" required maxlength="150" />
+          </div>
+          <div class="field">
+            <label>E-mail</label>
+            <input type="email" id="reg-email" required maxlength="150" />
+          </div>
+          <div class="field">
+            <label>Senha (mín. 6 caracteres)</label>
+            <input type="password" id="reg-senha" required minlength="6" maxlength="255" />
+          </div>
+        </div>
+        <button type="submit" class="btn">Registrar e entrar</button>
+      </form>
+    </div>
+  </section>
+
+  <!-- MEUS PEDIDOS (autenticado) -->
+  <section id="tab-meus-pedidos" class="tab">
+    <div class="card">
+      <h2>Meus pedidos</h2>
+      <p class="hint">Endpoint <code>GET /orders/me</code> — visível para qualquer usuário autenticado (cliente ou admin), filtrado pelo próprio cadastro.</p>
+      <form id="form-meus-pedidos" class="filters">
+        <div class="field">
+          <label>Status</label>
+          <select id="mp-status"><option value="">Todos</option></select>
+        </div>
+        <div class="field">
+          <label>Data início</label>
+          <input type="date" id="mp-data-inicio" />
+        </div>
+        <div class="field">
+          <label>Data fim</label>
+          <input type="date" id="mp-data-fim" />
+        </div>
+        <button type="submit" class="btn">Filtrar</button>
+      </form>
+      <div id="mp-result"></div>
+    </div>
+  </section>
+
+  <!-- TODOS OS PEDIDOS (admin) -->
+  <section id="tab-todos-pedidos" class="tab">
+    <div class="card">
+      <h2>Todos os pedidos</h2>
+      <p class="hint">Endpoint <code>GET /orders</code> — apenas ADMIN. Permite atualizar o status de cada pedido (<code>PATCH /orders/:id/status</code>).</p>
+      <form id="form-todos-pedidos" class="filters">
+        <div class="field">
+          <label>Status</label>
+          <select id="tp-status"><option value="">Todos</option></select>
+        </div>
+        <div class="field">
+          <label>Cliente ID</label>
+          <input type="number" min="1" id="tp-cliente-id" />
+        </div>
+        <div class="field">
+          <label>Data início</label>
+          <input type="date" id="tp-data-inicio" />
+        </div>
+        <div class="field">
+          <label>Data fim</label>
+          <input type="date" id="tp-data-fim" />
+        </div>
+        <button type="submit" class="btn">Filtrar</button>
+      </form>
+      <div id="tp-result"></div>
+    </div>
+  </section>
+
+  <!-- PRODUTOS (admin) -->
+  <section id="tab-produtos" class="tab">
+    <div class="card">
+      <h2>Novo produto</h2>
+      <form id="form-produto-novo">
+        <div class="grid">
+          <div class="field">
+            <label>Nome</label>
+            <input type="text" id="pr-nome" required maxlength="150" />
+          </div>
+          <div class="field">
+            <label>Preço</label>
+            <input type="number" id="pr-preco" required min="0.01" step="0.01" />
+          </div>
+        </div>
+        <button type="submit" class="btn">Criar produto</button>
+      </form>
+    </div>
+    <div class="card">
+      <h2>Produtos cadastrados</h2>
+      <div id="pr-result"></div>
+    </div>
+  </section>
+
+  <!-- CLIENTES (admin) -->
+  <section id="tab-clientes" class="tab">
+    <div class="card">
+      <h2>Novo cliente</h2>
+      <form id="form-cliente-novo">
+        <div class="grid">
+          <div class="field">
+            <label>Nome</label>
+            <input type="text" id="cl-nome" required maxlength="150" />
+          </div>
+          <div class="field">
+            <label>E-mail</label>
+            <input type="email" id="cl-email" required maxlength="150" />
+          </div>
+          <div class="field">
+            <label>Senha (opcional)</label>
+            <input type="password" id="cl-senha" minlength="6" maxlength="255" />
+          </div>
+        </div>
+        <button type="submit" class="btn">Criar cliente</button>
+      </form>
+    </div>
+    <div class="card">
+      <h2>Clientes cadastrados</h2>
+      <div id="cl-result"></div>
+    </div>
+  </section>
+
+</main>
+
+<div id="toast-area"></div>
+
+<script>
+(function () {
+  'use strict';
+
+  var STORAGE_TOKEN = 'delivery_token';
+  var STORAGE_PRODUCTS = 'delivery_products_cache';
+
+  var state = {
+    token: sessionStorage.getItem(STORAGE_TOKEN) || null,
+    user: null,
+    statuses: [],
+    products: JSON.parse(localStorage.getItem(STORAGE_PRODUCTS) || '[]'),
+  };
+
+  // ---------- helpers ----------
+
+  function escapeHtml(value) {
+    return String(value == null ? '' : value).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+
+  function formatMoney(value) {
+    var n = Number(value);
+    return isNaN(n) ? value : 'R$ ' + n.toFixed(2);
+  }
+
+  function formatDate(value) {
+    if (!value) return '';
+    var d = new Date(value);
+    if (isNaN(d.getTime())) return value;
+    return d.toLocaleString('pt-BR');
+  }
+
+  function toast(message, kind) {
+    var area = document.getElementById('toast-area');
+    var el = document.createElement('div');
+    el.className = 'toast ' + (kind === 'err' ? 'err' : 'ok');
+    el.textContent = message;
+    area.appendChild(el);
+    setTimeout(function () { el.remove(); }, 4500);
+  }
+
+  function api(path, options) {
+    options = options || {};
+    var headers = Object.assign({ 'Content-Type': 'application/json' }, options.headers || {});
+    if (state.token) headers.Authorization = 'Bearer ' + state.token;
+    return fetch(path, Object.assign({}, options, { headers: headers }))
+      .then(function (res) {
+        if (res.status === 204) return null;
+        return res.json().catch(function () { return null; }).then(function (body) {
+          if (!res.ok) {
+            var message = (body && (Array.isArray(body.message) ? body.message.join(', ') : body.message)) || res.statusText;
+            var err = new Error(message);
+            err.status = res.status;
+            throw err;
+          }
+          return body;
+        });
+      });
+  }
+
+  function setToken(token) {
+    state.token = token;
+    if (token) sessionStorage.setItem(STORAGE_TOKEN, token);
+    else sessionStorage.removeItem(STORAGE_TOKEN);
+  }
+
+  function cacheProducts(products) {
+    state.products = products;
+    localStorage.setItem(STORAGE_PRODUCTS, JSON.stringify(products));
+    renderProductsDatalist();
+  }
+
+  // ---------- tabs ----------
+
+  function showTab(name) {
+    document.querySelectorAll('nav button').forEach(function (btn) {
+      btn.classList.toggle('active', btn.dataset.tab === name);
+    });
+    document.querySelectorAll('section.tab').forEach(function (sec) {
+      sec.classList.toggle('active', sec.id === 'tab-' + name);
+    });
+    if (name === 'meus-pedidos') loadStatuses().then(loadMyOrders);
+    if (name === 'todos-pedidos') loadStatuses().then(loadAllOrders);
+    if (name === 'produtos') loadProducts();
+    if (name === 'clientes') loadClients();
+  }
+
+  document.getElementById('nav').addEventListener('click', function (e) {
+    var btn = e.target.closest('button[data-tab]');
+    if (!btn) return;
+    if (btn.classList.contains('hidden')) return;
+    showTab(btn.dataset.tab);
+  });
+
+  // ---------- auth ----------
+
+  function renderAuthUi() {
+    var authStatus = document.getElementById('auth-status');
+    var deslogado = document.getElementById('conta-deslogado');
+    var logado = document.getElementById('conta-logado');
+    var authOnly = document.querySelectorAll('.auth-only');
+    var adminOnly = document.querySelectorAll('.admin-only');
+
+    if (state.user) {
+      authStatus.innerHTML = 'Logado como <strong>' + escapeHtml(state.user.nome) + '</strong> (' + escapeHtml(state.user.email) + ') <span class="badge">' + escapeHtml(state.user.role) + '</span>';
+      deslogado.classList.add('hidden');
+      logado.classList.remove('hidden');
+      document.getElementById('conta-info').innerHTML =
+        '<p><strong>Nome:</strong> ' + escapeHtml(state.user.nome) + '<br/>' +
+        '<strong>E-mail:</strong> ' + escapeHtml(state.user.email) + '<br/>' +
+        '<strong>Papel:</strong> ' + escapeHtml(state.user.role) + '</p>';
+      authOnly.forEach(function (el) { el.classList.remove('hidden'); });
+      if (state.user.role === 'admin') {
+        adminOnly.forEach(function (el) { el.classList.remove('hidden'); });
+      } else {
+        adminOnly.forEach(function (el) { el.classList.add('hidden'); });
+      }
+    } else {
+      authStatus.textContent = 'Não autenticado';
+      deslogado.classList.remove('hidden');
+      logado.classList.add('hidden');
+      authOnly.forEach(function (el) { el.classList.add('hidden'); });
+      adminOnly.forEach(function (el) { el.classList.add('hidden'); });
+      var activeTab = document.querySelector('nav button.active');
+      if (activeTab && (activeTab.classList.contains('auth-only') || activeTab.classList.contains('admin-only'))) {
+        showTab('novo-pedido');
+      }
+    }
+  }
+
+  function loadMe() {
+    if (!state.token) { state.user = null; renderAuthUi(); return Promise.resolve(); }
+    return api('/auth/me')
+      .then(function (user) { state.user = user; renderAuthUi(); })
+      .catch(function () { setToken(null); state.user = null; renderAuthUi(); });
+  }
+
+  document.getElementById('form-login').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var email = document.getElementById('login-email').value;
+    var senha = document.getElementById('login-senha').value;
+    api('/auth/login', { method: 'POST', body: JSON.stringify({ email: email, senha: senha }) })
+      .then(function (res) {
+        setToken(res.accessToken);
+        return loadMe();
+      })
+      .then(function () { toast('Login efetuado com sucesso'); showTab('conta'); })
+      .catch(function (err) { toast(err.message, 'err'); });
+  });
+
+  document.getElementById('form-registro').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var nome = document.getElementById('reg-nome').value;
+    var email = document.getElementById('reg-email').value;
+    var senha = document.getElementById('reg-senha').value;
+    api('/auth/register', { method: 'POST', body: JSON.stringify({ nome: nome, email: email, senha: senha }) })
+      .then(function (res) {
+        setToken(res.accessToken);
+        return loadMe();
+      })
+      .then(function () { toast('Cliente registrado e autenticado'); showTab('conta'); e.target.reset(); })
+      .catch(function (err) { toast(err.message, 'err'); });
+  });
+
+  document.getElementById('btn-logout').addEventListener('click', function () {
+    setToken(null);
+    state.user = null;
+    renderAuthUi();
+    toast('Sessão encerrada');
+  });
+
+  // ---------- pedidos: novo pedido (público) ----------
+
+  function renderProductsDatalist() {
+    var hint = document.getElementById('np-produtos-hint');
+    var list = document.getElementById('produtos-list');
+    list.innerHTML = state.products.map(function (p) {
+      return '<option value="' + p.id + '">' + escapeHtml(p.nome) + ' - ' + formatMoney(p.preco) + '</option>';
+    }).join('');
+    if (state.products.length) {
+      hint.innerHTML = 'Produtos disponíveis: ' + state.products.map(function (p) {
+        return '<span class="pill">#' + p.id + ' ' + escapeHtml(p.nome) + ' (' + formatMoney(p.preco) + ')</span>';
+      }).join(' ');
+    } else {
+      hint.textContent = 'Nenhum produto cadastrado ainda.';
+    }
+  }
+
+  function addItemRow(produtoId, quantidade) {
+    var container = document.getElementById('np-itens');
+    var row = document.createElement('div');
+    row.className = 'item-row';
+    row.innerHTML =
+      '<div class="field"><label>Produto (ID)</label>' +
+      '<input type="number" min="1" class="np-item-produto" list="produtos-list" required value="' + (produtoId || '') + '" /></div>' +
+      '<div class="field"><label>Quantidade</label>' +
+      '<input type="number" min="1" class="np-item-qtd" required value="' + (quantidade || 1) + '" /></div>' +
+      '<button type="button" class="btn secondary small np-remove-item">remover</button>';
+    row.querySelector('.np-remove-item').addEventListener('click', function () {
+      if (document.querySelectorAll('.item-row').length > 1) row.remove();
+    });
+    container.appendChild(row);
+  }
+  addItemRow();
+
+  document.getElementById('np-add-item').addEventListener('click', function () { addItemRow(); });
+
+  document.getElementById('form-novo-pedido').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var nome = document.getElementById('np-nome').value.trim();
+    var email = document.getElementById('np-email').value.trim();
+    var itens = Array.prototype.map.call(document.querySelectorAll('.item-row'), function (row) {
+      return {
+        produtoId: Number(row.querySelector('.np-item-produto').value),
+        quantidade: Number(row.querySelector('.np-item-qtd').value),
+      };
+    });
+    var payload = { cliente: { email: email }, itens: itens };
+    if (nome) payload.cliente.nome = nome;
+
+    api('/orders', { method: 'POST', body: JSON.stringify(payload) })
+      .then(function (pedido) {
+        toast('Pedido #' + pedido.id + ' criado com sucesso');
+        var card = document.getElementById('np-result-card');
+        card.classList.remove('hidden');
+        document.getElementById('np-result').innerHTML = renderPedidoDetail(pedido);
+      })
+      .catch(function (err) { toast(err.message, 'err'); });
+  });
+
+  // ---------- pedidos: consulta pública ----------
+
+  document.getElementById('form-consultar-pedido').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var id = document.getElementById('cp-id').value;
+    api('/orders/' + id)
+      .then(function (pedido) {
+        document.getElementById('cp-result').innerHTML = renderPedidoDetail(pedido);
+      })
+      .catch(function (err) {
+        document.getElementById('cp-result').innerHTML = '<p class="empty">' + escapeHtml(err.message) + '</p>';
+      });
+  });
+
+  function renderPedidoDetail(pedido) {
+    var itensHtml = (pedido.itens || []).map(function (item) {
+      return '<tr><td>' + escapeHtml(item.produto ? item.produto.nome : item.produtoId) + '</td>' +
+        '<td>' + item.quantidade + '</td><td>' + formatMoney(item.precoUnitario) + '</td></tr>';
+    }).join('');
+    return (
+      '<p><strong>Pedido #' + pedido.id + '</strong> · ' + escapeHtml(pedido.status ? pedido.status.nome : '') +
+      ' · ' + formatDate(pedido.data) + '</p>' +
+      '<p><strong>Cliente:</strong> ' + escapeHtml(pedido.cliente ? pedido.cliente.nome + ' (' + pedido.cliente.email + ')' : '') + '</p>' +
+      '<table><thead><tr><th>Produto</th><th>Qtd.</th><th>Preço unit.</th></tr></thead><tbody>' +
+      (itensHtml || '<tr><td colspan="3" class="empty">Sem itens</td></tr>') +
+      '</tbody></table>' +
+      '<p><strong>Total: ' + formatMoney(pedido.valorTotal) + '</strong></p>'
+    );
+  }
+
+  // ---------- status de pedido ----------
+
+  function loadStatuses() {
+    if (!state.token) return Promise.resolve([]);
+    return api('/orders-status').then(function (statuses) {
+      state.statuses = statuses;
+      ['mp-status', 'tp-status'].forEach(function (selectId) {
+        var select = document.getElementById(selectId);
+        var current = select.value;
+        select.innerHTML = '<option value="">Todos</option>' + statuses.map(function (s) {
+          return '<option value="' + s.id + '">' + escapeHtml(s.nome) + '</option>';
+        }).join('');
+        select.value = current;
+      });
+      return statuses;
+    }).catch(function (err) { toast(err.message, 'err'); return []; });
+  }
+
+  function statusSelectHtml(currentId) {
+    return '<select class="status-changer">' + state.statuses.map(function (s) {
+      return '<option value="' + s.id + '"' + (s.id === currentId ? ' selected' : '') + '>' + escapeHtml(s.nome) + '</option>';
+    }).join('') + '</select>';
+  }
+
+  // ---------- meus pedidos ----------
+
+  function loadMyOrders() {
+    var params = new URLSearchParams();
+    var statusId = document.getElementById('mp-status').value;
+    var dataInicio = document.getElementById('mp-data-inicio').value;
+    var dataFim = document.getElementById('mp-data-fim').value;
+    if (statusId) params.set('statusId', statusId);
+    if (dataInicio) params.set('dataInicio', dataInicio);
+    if (dataFim) params.set('dataFim', dataFim);
+
+    api('/orders/me?' + params.toString())
+      .then(function (pedidos) {
+        document.getElementById('mp-result').innerHTML = renderOrdersTable(pedidos, false);
+      })
+      .catch(function (err) { toast(err.message, 'err'); });
+  }
+
+  document.getElementById('form-meus-pedidos').addEventListener('submit', function (e) {
+    e.preventDefault();
+    loadMyOrders();
+  });
+
+  // ---------- todos os pedidos (admin) ----------
+
+  function loadAllOrders() {
+    var params = new URLSearchParams();
+    var statusId = document.getElementById('tp-status').value;
+    var clienteId = document.getElementById('tp-cliente-id').value;
+    var dataInicio = document.getElementById('tp-data-inicio').value;
+    var dataFim = document.getElementById('tp-data-fim').value;
+    if (statusId) params.set('statusId', statusId);
+    if (clienteId) params.set('clienteId', clienteId);
+    if (dataInicio) params.set('dataInicio', dataInicio);
+    if (dataFim) params.set('dataFim', dataFim);
+
+    api('/orders?' + params.toString())
+      .then(function (pedidos) {
+        document.getElementById('tp-result').innerHTML = renderOrdersTable(pedidos, true);
+        document.querySelectorAll('#tp-result .update-status-btn').forEach(function (btn) {
+          btn.addEventListener('click', function () {
+            var id = btn.dataset.id;
+            var select = btn.closest('tr').querySelector('.status-changer');
+            api('/orders/' + id + '/status', { method: 'PATCH', body: JSON.stringify({ statusId: Number(select.value) }) })
+              .then(function () { toast('Status do pedido #' + id + ' atualizado'); loadAllOrders(); })
+              .catch(function (err) { toast(err.message, 'err'); });
+          });
+        });
+      })
+      .catch(function (err) { toast(err.message, 'err'); });
+  }
+
+  document.getElementById('form-todos-pedidos').addEventListener('submit', function (e) {
+    e.preventDefault();
+    loadAllOrders();
+  });
+
+  function renderOrdersTable(pedidos, withActions) {
+    if (!pedidos || !pedidos.length) return '<p class="empty">Nenhum pedido encontrado.</p>';
+    var rows = pedidos.map(function (p) {
+      var itensResumo = (p.itens || []).map(function (i) {
+        return (i.produto ? i.produto.nome : i.produtoId) + ' x' + i.quantidade;
+      }).join(', ');
+      return (
+        '<tr>' +
+        '<td>#' + p.id + '</td>' +
+        '<td>' + escapeHtml(p.cliente ? p.cliente.nome : '') + '<br/><span class="muted">' + escapeHtml(p.cliente ? p.cliente.email : '') + '</span></td>' +
+        '<td>' + escapeHtml(itensResumo) + '</td>' +
+        '<td>' + formatMoney(p.valorTotal) + '</td>' +
+        '<td>' + formatDate(p.data) + '</td>' +
+        '<td>' + escapeHtml(p.status ? p.status.nome : '') + '</td>' +
+        (withActions ? '<td>' + statusSelectHtml(p.status ? p.status.id : null) +
+          ' <button type="button" class="btn small update-status-btn" data-id="' + p.id + '">atualizar</button></td>' : '') +
+        '</tr>'
+      );
+    }).join('');
+    return (
+      '<table><thead><tr><th>ID</th><th>Cliente</th><th>Itens</th><th>Total</th><th>Data</th><th>Status</th>' +
+      (withActions ? '<th>Ação</th>' : '') + '</tr></thead><tbody>' + rows + '</tbody></table>'
+    );
+  }
+
+  // ---------- produtos (admin) ----------
+
+  function loadProducts() {
+    api('/products')
+      .then(function (produtos) {
+        cacheProducts(produtos);
+        document.getElementById('pr-result').innerHTML = renderProductsTable(produtos);
+        bindProductActions();
+      })
+      .catch(function (err) { toast(err.message, 'err'); });
+  }
+
+  function renderProductsTable(produtos) {
+    if (!produtos.length) return '<p class="empty">Nenhum produto cadastrado.</p>';
+    var rows = produtos.map(function (p) {
+      return (
+        '<tr data-id="' + p.id + '">' +
+        '<td>#' + p.id + '</td>' +
+        '<td><input type="text" class="pr-edit-nome" value="' + escapeHtml(p.nome) + '" /></td>' +
+        '<td><input type="number" step="0.01" min="0.01" class="pr-edit-preco" value="' + Number(p.preco).toFixed(2) + '" /></td>' +
+        '<td class="row-actions">' +
+        '<button type="button" class="btn small pr-save" data-id="' + p.id + '">salvar</button>' +
+        '<button type="button" class="btn small danger pr-delete" data-id="' + p.id + '">excluir</button>' +
+        '</td></tr>'
+      );
+    }).join('');
+    return '<table><thead><tr><th>ID</th><th>Nome</th><th>Preço</th><th>Ações</th></tr></thead><tbody>' + rows + '</tbody></table>';
+  }
+
+  function bindProductActions() {
+    document.querySelectorAll('.pr-save').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var tr = btn.closest('tr');
+        var nome = tr.querySelector('.pr-edit-nome').value;
+        var preco = Number(tr.querySelector('.pr-edit-preco').value);
+        api('/products/' + btn.dataset.id, { method: 'PATCH', body: JSON.stringify({ nome: nome, preco: preco }) })
+          .then(function () { toast('Produto atualizado'); loadProducts(); })
+          .catch(function (err) { toast(err.message, 'err'); });
+      });
+    });
+    document.querySelectorAll('.pr-delete').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        if (!confirm('Remover este produto?')) return;
+        api('/products/' + btn.dataset.id, { method: 'DELETE' })
+          .then(function () { toast('Produto removido'); loadProducts(); })
+          .catch(function (err) { toast(err.message, 'err'); });
+      });
+    });
+  }
+
+  document.getElementById('form-produto-novo').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var nome = document.getElementById('pr-nome').value;
+    var preco = Number(document.getElementById('pr-preco').value);
+    api('/products', { method: 'POST', body: JSON.stringify({ nome: nome, preco: preco }) })
+      .then(function () { toast('Produto criado'); e.target.reset(); loadProducts(); })
+      .catch(function (err) { toast(err.message, 'err'); });
+  });
+
+  // ---------- clientes (admin) ----------
+
+  function loadClients() {
+    api('/clients')
+      .then(function (clientes) {
+        document.getElementById('cl-result').innerHTML = renderClientsTable(clientes);
+        bindClientActions();
+      })
+      .catch(function (err) { toast(err.message, 'err'); });
+  }
+
+  function renderClientsTable(clientes) {
+    if (!clientes.length) return '<p class="empty">Nenhum cliente cadastrado.</p>';
+    var rows = clientes.map(function (c) {
+      return (
+        '<tr data-id="' + c.id + '">' +
+        '<td>#' + c.id + '</td>' +
+        '<td><input type="text" class="cl-edit-nome" value="' + escapeHtml(c.nome) + '" /></td>' +
+        '<td><input type="email" class="cl-edit-email" value="' + escapeHtml(c.email) + '" /></td>' +
+        '<td><span class="badge">' + escapeHtml(c.role) + '</span></td>' +
+        '<td class="row-actions">' +
+        '<button type="button" class="btn small cl-save" data-id="' + c.id + '">salvar</button>' +
+        '<button type="button" class="btn small danger cl-delete" data-id="' + c.id + '">excluir</button>' +
+        '</td></tr>'
+      );
+    }).join('');
+    return '<table><thead><tr><th>ID</th><th>Nome</th><th>E-mail</th><th>Papel</th><th>Ações</th></tr></thead><tbody>' + rows + '</tbody></table>';
+  }
+
+  function bindClientActions() {
+    document.querySelectorAll('.cl-save').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var tr = btn.closest('tr');
+        var nome = tr.querySelector('.cl-edit-nome').value;
+        var email = tr.querySelector('.cl-edit-email').value;
+        api('/clients/' + btn.dataset.id, { method: 'PATCH', body: JSON.stringify({ nome: nome, email: email }) })
+          .then(function () { toast('Cliente atualizado'); loadClients(); })
+          .catch(function (err) { toast(err.message, 'err'); });
+      });
+    });
+    document.querySelectorAll('.cl-delete').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        if (!confirm('Remover este cliente?')) return;
+        api('/clients/' + btn.dataset.id, { method: 'DELETE' })
+          .then(function () { toast('Cliente removido'); loadClients(); })
+          .catch(function (err) { toast(err.message, 'err'); });
+      });
+    });
+  }
+
+  document.getElementById('form-cliente-novo').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var nome = document.getElementById('cl-nome').value;
+    var email = document.getElementById('cl-email').value;
+    var senha = document.getElementById('cl-senha').value;
+    var payload = { nome: nome, email: email };
+    if (senha) payload.senha = senha;
+    api('/clients', { method: 'POST', body: JSON.stringify(payload) })
+      .then(function () { toast('Cliente criado'); e.target.reset(); loadClients(); })
+      .catch(function (err) { toast(err.message, 'err'); });
+  });
+
+  // ---------- init ----------
+
+  renderProductsDatalist();
+  renderAuthUi();
+  loadMe();
+  loadProducts();
+})();
+</script>
+
+</body>
+</html>

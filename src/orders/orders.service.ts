@@ -23,6 +23,7 @@ import { Status } from '../database/entities/status.entity';
 import { CreateOrderClienteDto, CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 import { FindOrdersQueryDto } from './dto/find-orders-query.dto';
+import { MailService } from '../mail/mail.service';
 
 const STATUS_INICIAL = 'pendente';
 const POSTGRES_UNIQUE_VIOLATION = '23505';
@@ -42,6 +43,7 @@ export class OrdersService {
     private readonly produtosRepository: Repository<Produto>,
     @InjectRepository(Status)
     private readonly statusRepository: Repository<Status>,
+    private readonly mailService: MailService,
   ) {}
 
   async create(createOrderDto: CreateOrderDto): Promise<Pedido> {
@@ -112,7 +114,9 @@ export class OrdersService {
       },
     );
 
-    return this.findOne(pedido.id);
+    const pedidoCompleto = await this.findOne(pedido.id);
+    await this.mailService.sendOrderCreated(pedidoCompleto);
+    return pedidoCompleto;
   }
 
   findAll(query: FindOrdersQueryDto): Promise<Pedido[]> {
@@ -173,7 +177,9 @@ export class OrdersService {
       );
     });
 
-    return this.findOne(id);
+    const pedidoAtualizado = await this.findOne(id);
+    await this.mailService.sendOrderStatusUpdated(pedidoAtualizado);
+    return pedidoAtualizado;
   }
 
   findAllStatuses(): Promise<Status[]> {

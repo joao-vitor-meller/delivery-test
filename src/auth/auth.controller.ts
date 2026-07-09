@@ -1,9 +1,19 @@
-import { Body, Controller, HttpCode, HttpStatus, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Post,
+} from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { AuthResponseDto } from './dto/auth-response.dto';
+import { Auth } from './decorators/auth.decorator';
+import { CurrentUser } from './decorators/current-user.decorator';
+import { Cliente } from '../database/entities/cliente.entity';
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -12,8 +22,7 @@ export class AuthController {
 
   @Post('register')
   @ApiOperation({
-    summary:
-      'Registra um novo cliente e retorna um token JWT (PÚBLICO)',
+    summary: 'Registra um novo cliente e retorna um token JWT',
   })
   @ApiResponse({
     status: HttpStatus.CREATED,
@@ -31,7 +40,7 @@ export class AuthController {
   @Post('login')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: 'Autentica um cliente e retorna um token JWT (PÚBLICO)',
+    summary: 'Autentica um cliente e retorna um token JWT',
   })
   @ApiResponse({
     status: HttpStatus.OK,
@@ -44,5 +53,19 @@ export class AuthController {
   })
   login(@Body() loginDto: LoginDto): Promise<AuthResponseDto> {
     return this.authService.login(loginDto);
+  }
+
+  @Get('me')
+  @Auth()
+  @ApiOperation({
+    summary: 'Retorna os dados do cliente autenticado (ADMIN/CLIENTE)',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Dados do cliente autenticado',
+    type: Cliente,
+  })
+  me(@CurrentUser() cliente: Cliente): Cliente {
+    return cliente;
   }
 }

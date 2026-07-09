@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+  </head>
+  <body style="font-family: sans-serif; color: #222;">
+    <h1>Pedido confirmado!</h1>
+    <p>Olá, {{nomeCliente}}.</p>
+    <p>
+      Seu pedido <strong>#{{pedidoId}}</strong> foi criado com sucesso e já
+      está sendo preparado.
+    </p>
+    <table cellpadding="6" style="border-collapse: collapse; width: 100%;">
+      <thead>
+        <tr style="text-align: left; border-bottom: 1px solid #ccc;">
+          <th>Produto</th>
+          <th>Qtd.</th>
+          <th>Preço unit.</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{#each itens}}
+          <tr style="border-bottom: 1px solid #eee;">
+            <td>{{this.produto.nome}}</td>
+            <td>{{this.quantidade}}</td>
+            <td>{{this.precoUnitario}}</td>
+          </tr>
+        {{/each}}
+      </tbody>
+    </table>
+    <p><strong>Valor total: R$ {{valorTotal}}</strong></p>
+    <p>Acompanhe o status do seu pedido pela nossa plataforma.</p>
+  </body>
+</html>

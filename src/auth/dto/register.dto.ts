@@ -3,10 +3,10 @@ import { IsEmail, IsString, MaxLength, MinLength } from 'class-validator';
 
 export class RegisterDto {
   @ApiProperty({
-    description: 'Nome do cliente',
+    description: 'Nome de usuário',
     minLength: 1,
     maxLength: 150,
-    example: 'João da Silva',
+    example: 'Admin',
   })
   @IsString()
   @MinLength(1)
@@ -14,19 +14,19 @@ export class RegisterDto {
   nome!: string;
 
   @ApiProperty({
-    description: 'E-mail do cliente',
+    description: 'E-mail',
     maxLength: 150,
-    example: 'joao.silva@email.com',
+    example: 'admin@delivery.com',
   })
   @IsEmail()
   @MaxLength(150)
   email!: string;
 
   @ApiProperty({
-    description: 'Senha do cliente',
+    description: 'Senha',
     minLength: 6,
     maxLength: 255,
-    example: 'senhaForte123',
+    example: 'admin123',
   })
   @IsString()
   @MinLength(6)
