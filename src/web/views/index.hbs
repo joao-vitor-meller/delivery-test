@@ -437,6 +437,7 @@
 
 <div id="toast-area"></div>
 
+<script src="/socket.io/socket.io.js"></script>
 <script>
 (function () {
   'use strict';
@@ -449,7 +450,28 @@
     user: null,
     statuses: [],
     products: JSON.parse(localStorage.getItem(STORAGE_PRODUCTS) || '[]'),
+    cpPedidoId: null,
   };
+
+  // ---------- websocket (atualização de status em tempo real) ----------
+
+  var socket = null;
+
+  function connectSocket() {
+    if (socket) socket.disconnect();
+    socket = io({ auth: { token: state.token || undefined } });
+    socket.on('pedido:status-atualizado', function (pedido) {
+      toast('Pedido #' + pedido.id + ' atualizado para "' + (pedido.status ? pedido.status.nome : '') + '"');
+
+      if (state.cpPedidoId === pedido.id) {
+        document.getElementById('cp-result').innerHTML = renderPedidoDetail(pedido);
+      }
+
+      var activeTab = document.querySelector('nav button.active');
+      if (activeTab && activeTab.dataset.tab === 'meus-pedidos') loadMyOrders();
+      if (activeTab && activeTab.dataset.tab === 'todos-pedidos') loadAllOrders();
+    });
+  }
 
   // ---------- helpers ----------
 
@@ -585,7 +607,7 @@
         setToken(res.accessToken);
         return loadMe();
       })
-      .then(function () { toast('Login efetuado com sucesso'); showTab('conta'); })
+      .then(function () { connectSocket(); toast('Login efetuado com sucesso'); showTab('conta'); })
       .catch(function (err) { toast(err.message, 'err'); });
   });
 
@@ -599,7 +621,7 @@
         setToken(res.accessToken);
         return loadMe();
       })
-      .then(function () { toast('Cliente registrado e autenticado'); showTab('conta'); e.target.reset(); })
+      .then(function () { connectSocket(); toast('Cliente registrado e autenticado'); showTab('conta'); e.target.reset(); })
       .catch(function (err) { toast(err.message, 'err'); });
   });
 
@@ -607,6 +629,7 @@
     setToken(null);
     state.user = null;
     renderAuthUi();
+    connectSocket();
     toast('Sessão encerrada');
   });
 
@@ -676,9 +699,12 @@
     var id = document.getElementById('cp-id').value;
     api('/orders/' + id)
       .then(function (pedido) {
+        state.cpPedidoId = pedido.id;
         document.getElementById('cp-result').innerHTML = renderPedidoDetail(pedido);
+        if (socket) socket.emit('acompanhar-pedido', { pedidoId: pedido.id });
       })
       .catch(function (err) {
+        state.cpPedidoId = null;
         document.getElementById('cp-result').innerHTML = '<p class="empty">' + escapeHtml(err.message) + '</p>';
       });
   });
@@ -930,6 +956,7 @@
 
   renderProductsDatalist();
   renderAuthUi();
+  connectSocket();
   loadMe();
   loadProducts();
 })();

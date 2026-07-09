@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { OrdersService } from './orders.service';
+import { OrdersGateway } from './orders.gateway';
 import { Pedido } from '../database/entities/pedido.entity';
 import { Produto } from '../database/entities/produto.entity';
 import { Status } from '../database/entities/status.entity';
@@ -21,6 +22,10 @@ const mockMailService = () => ({
   sendOrderStatusUpdated: jest.fn(),
 });
 
+const mockOrdersGateway = () => ({
+  emitStatusAtualizado: jest.fn(),
+});
+
 describe('OrdersService', () => {
   let service: OrdersService;
 
@@ -32,6 +37,7 @@ describe('OrdersService', () => {
         { provide: getRepositoryToken(Produto), useFactory: mockRepository },
         { provide: getRepositoryToken(Status), useFactory: mockRepository },
         { provide: MailService, useFactory: mockMailService },
+        { provide: OrdersGateway, useFactory: mockOrdersGateway },
       ],
     }).compile();
 

@@ -24,6 +24,7 @@ import { CreateOrderClienteDto, CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 import { FindOrdersQueryDto } from './dto/find-orders-query.dto';
 import { MailService } from '../mail/mail.service';
+import { OrdersGateway } from './orders.gateway';
 
 const STATUS_INICIAL = 'pendente';
 const POSTGRES_UNIQUE_VIOLATION = '23505';
@@ -44,6 +45,7 @@ export class OrdersService {
     @InjectRepository(Status)
     private readonly statusRepository: Repository<Status>,
     private readonly mailService: MailService,
+    private readonly ordersGateway: OrdersGateway,
   ) {}
 
   async create(createOrderDto: CreateOrderDto): Promise<Pedido> {
@@ -179,6 +181,7 @@ export class OrdersService {
 
     const pedidoAtualizado = await this.findOne(id);
     await this.mailService.sendOrderStatusUpdated(pedidoAtualizado);
+    this.ordersGateway.emitStatusAtualizado(pedidoAtualizado);
     return pedidoAtualizado;
   }
 

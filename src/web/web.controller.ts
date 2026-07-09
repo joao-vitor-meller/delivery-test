@@ -6,7 +6,7 @@ import type { Response } from 'express';
 import * as Handlebars from 'handlebars';
 
 @ApiExcludeController()
-@Controller('app')
+@Controller('interface')
 export class WebController {
   private readonly template = Handlebars.compile(
     readFileSync(join(__dirname, 'views', 'index.hbs'), 'utf-8'),
