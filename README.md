@@ -25,6 +25,22 @@
 
 API de delivery construída com [Nest](https://github.com/nestjs/nest).
 
+## Demonstração
+
+GIF
+
+<p align="center">
+  <img src="src/web/midia/demo.gif" alt="Demonstração da interface de delivery" width="360" />
+</p>
+
+Vídeo:
+
+<p align="center">
+  <video src="src/web/midia/demo.mp4" controls width="480">
+    Seu visualizador não suporta vídeo incorporado — baixe o arquivo em <a href="src/web/midia/demo.mp4">src/web/midia/demo.mp4</a>.
+  </video>
+</p>
+
 ## Executando com Docker
 
 Pré-requisitos: Docker e Docker Compose instalados.
@@ -41,16 +57,14 @@ Pré-requisitos: Docker e Docker Compose instalados.
    $ docker compose up --build
    ```
 
-   O serviço `api` roda em modo `watch`, então alterações no código-fonte são recarregadas automaticamente sem precisar reconstruir a imagem.
-
 3. Após subir, os serviços ficam disponíveis em:
 
-   | Serviço                     | URL                                              |
-   | ---------------------------- | ------------------------------------------------ |
-   | API                          | http://localhost:3000                            |
-   | Swagger (documentação da API)| http://localhost:3000/swagger                    |
-   | Mailpit (caixa de e-mail de teste) | http://localhost:8025                       |
-   | Dozzle (logs dos containers) | http://localhost:9999                            |
+   | Serviço                            | URL                           |
+   | ---------------------------------- | ----------------------------- |
+   | API                                | http://localhost:3000         |
+   | Swagger (documentação da API)      | http://localhost:3000/swagger |
+   | Mailpit (caixa de e-mail de teste) | http://localhost:8025         |
+   | Dozzle (logs dos containers)       | http://localhost:9999         |
 
    As portas podem ser customizadas através das variáveis `API_PORT`, `DOZZLE_PORT` e `POSTGRES_PORT` no `.env`.
 
