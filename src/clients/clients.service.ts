@@ -66,11 +66,6 @@ export class ClientsService {
     }
   }
 
-  async remove(id: number): Promise<void> {
-    const cliente = await this.findOne(id);
-    await this.clientsRepository.remove(cliente);
-  }
-
   private handleUniqueEmailViolation(error: unknown, email: string): void {
     if (
       error instanceof QueryFailedError &&

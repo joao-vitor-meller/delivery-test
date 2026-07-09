@@ -23,9 +23,44 @@
 
 ## Description
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+API de delivery construída com [Nest](https://github.com/nestjs/nest).
 
-## Project setup
+## Executando com Docker
+
+Pré-requisitos: Docker e Docker Compose instalados.
+
+1. Copie o arquivo de variáveis de ambiente:
+
+   ```bash
+   $ cp .env.example .env
+   ```
+
+2. Suba os containers (API, banco Postgres, Mailpit e Dozzle):
+
+   ```bash
+   $ docker compose up --build
+   ```
+
+   O serviço `api` roda em modo `watch`, então alterações no código-fonte são recarregadas automaticamente sem precisar reconstruir a imagem.
+
+3. Após subir, os serviços ficam disponíveis em:
+
+   | Serviço                     | URL                                              |
+   | ---------------------------- | ------------------------------------------------ |
+   | API                          | http://localhost:3000                            |
+   | Swagger (documentação da API)| http://localhost:3000/swagger                    |
+   | Mailpit (caixa de e-mail de teste) | http://localhost:8025                       |
+   | Dozzle (logs dos containers) | http://localhost:9999                            |
+
+   As portas podem ser customizadas através das variáveis `API_PORT`, `DOZZLE_PORT` e `POSTGRES_PORT` no `.env`.
+
+4. Para parar os containers:
+
+   ```bash
+   $ docker compose down
+   ```
+
+## Project setup (execução local, sem Docker)
 
 ```bash
 $ npm install

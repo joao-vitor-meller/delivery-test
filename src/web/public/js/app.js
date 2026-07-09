@@ -40,8 +40,29 @@
     if (isNaN(d.getTime())) return value;
     return d.toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
   }
-  function toISOStart(d) { return d ? new Date(d + 'T00:00:00').toISOString() : undefined; }
-  function toISOEnd(d) { return d ? new Date(d + 'T23:59:59.999').toISOString() : undefined; }
+
+  function copyToClipboard(text) {
+    if (navigator.clipboard && navigator.clipboard.writeText) return navigator.clipboard.writeText(text);
+    var ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand('copy'); } catch (e) { /* noop */ }
+    document.body.removeChild(ta);
+    return Promise.resolve();
+  }
+  document.addEventListener('click', function (e) {
+    var el = e.target.closest('[data-copy]');
+    if (!el) return;
+    copyToClipboard(el.dataset.copy).then(function () { toast('Link copiado!'); });
+  });
+
+  function trackingLinkFor(pedido) {
+    if (!pedido || !pedido.trackingToken) return null;
+    return window.location.origin + window.location.pathname + '?pedido=' + pedido.trackingToken;
+  }
 
   function toast(message, kind) {
     var area = document.getElementById('toast-area');
@@ -336,7 +357,6 @@
           state.cart = [];
           saveCart();
           toast('Pedido #' + pedido.id + ' realizado com sucesso!');
-          document.getElementById('rp-id').value = pedido.id;
           state.trackedPedidoId = pedido.id;
           showTab('rastrear');
           renderTrackedOrder(pedido);
@@ -441,23 +461,6 @@
 
   // ---------- rastrear pedido ----------
 
-  document.getElementById('form-rastrear').addEventListener('submit', function (e) {
-    e.preventDefault();
-    var id = document.getElementById('rp-id').value;
-    var result = document.getElementById('rastrear-result');
-    result.innerHTML = '<div class="card-surface" style="padding:1.5rem;"><div class="skeleton" style="height:1.5rem;width:50%;margin-bottom:0.75rem;"></div><div class="skeleton" style="height:8rem;"></div></div>';
-    api('/orders/' + id)
-      .then(function (pedido) {
-        state.trackedPedidoId = pedido.id;
-        renderTrackedOrder(pedido);
-        if (socket) socket.emit('acompanhar-pedido', { pedidoId: pedido.id });
-      })
-      .catch(function (err) {
-        state.trackedPedidoId = null;
-        result.innerHTML = '<div class="card-surface empty-state"><p style="font-weight:600;">Pedido não encontrado</p><p class="muted">' + escapeHtml(err.message) + '</p></div>';
-      });
-  });
-
   function renderTrackedOrder(pedido) {
     var result = document.getElementById('rastrear-result');
     var nome = (pedido.status && pedido.status.nome ? pedido.status.nome : '').toLowerCase();
@@ -513,7 +516,17 @@
       '<span style="font-weight:600;">Total</span>' +
       '<span style="font-family:\'Bricolage Grotesque\',sans-serif;font-size:1.3rem;font-weight:800;color:var(--primary);">' + formatMoney(pedido.valorTotal) + '</span>' +
       '</div></div>' +
-      '<p class="hint" style="text-align:center;margin-top:1rem;">Guarde este link para acompanhar seu pedido a qualquer momento.</p>';
+      (function () {
+        var link = trackingLinkFor(pedido);
+        if (!link) return '';
+        return (
+          '<div class="card-surface" style="padding:1rem;margin-top:1rem;display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap;">' +
+          '<input readonly class="input-field" style="flex:1;min-width:12rem;" value="' + escapeHtml(link) + '" onclick="this.select();" />' +
+          '<button type="button" class="btn-outline" data-copy="' + escapeHtml(link) + '">Copiar link</button>' +
+          '</div>' +
+          '<p class="hint" style="text-align:center;margin-top:0.75rem;">Qualquer pessoa com este link pode acompanhar o pedido, sem precisar entrar na conta.</p>'
+        );
+      })();
   }
 
   // ---------- status ----------
@@ -550,8 +563,8 @@
   function loadMyOrders() {
     var params = {
       statusId: document.getElementById('mp-status').value,
-      dataInicio: toISOStart(document.getElementById('mp-data-inicio').value),
-      dataFim: toISOEnd(document.getElementById('mp-data-fim').value),
+      dataInicio: document.getElementById('mp-data-inicio').value,
+      dataFim: document.getElementById('mp-data-fim').value,
     };
     var result = document.getElementById('mp-result');
     result.innerHTML = Array.from({ length: 3 }).map(function () { return '<div class="card-surface skeleton" style="height:5rem;"></div>'; }).join('');
@@ -593,7 +606,6 @@
     if (!link) return;
     e.preventDefault();
     var id = link.dataset.id;
-    document.getElementById('rp-id').value = id;
     showTab('rastrear');
     state.trackedPedidoId = Number(id);
     document.getElementById('rastrear-result').innerHTML = '<div class="card-surface" style="padding:1.5rem;"><div class="skeleton" style="height:8rem;"></div></div>';
@@ -652,8 +664,8 @@
     var params = {
       statusId: document.getElementById('tp-status').value,
       clienteId: document.getElementById('tp-cliente-id').value,
-      dataInicio: toISOStart(document.getElementById('tp-data-inicio').value),
-      dataFim: toISOEnd(document.getElementById('tp-data-fim').value),
+      dataInicio: document.getElementById('tp-data-inicio').value,
+      dataFim: document.getElementById('tp-data-fim').value,
     };
     var result = document.getElementById('tp-result');
     api('/orders' + qs(params))
@@ -732,7 +744,6 @@
         '<td>' + (p.estoque <= 0 ? '<span class="badge-status st-cancelado"><span class="dot"></span>Esgotado</span>' : p.estoque) + '</td>' +
         '<td><div class="actions-right">' +
         '<button type="button" class="btn-ghost icon pr-edit" aria-label="Editar"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg></button>' +
-        '<button type="button" class="btn-ghost icon btn-danger-text pr-delete" aria-label="Remover"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6"/></svg></button>' +
         '</div></td></tr>'
       );
     }).join('');
@@ -745,16 +756,6 @@
         var id = btn.closest('tr').dataset.id;
         var p = state.products.find(function (x) { return String(x.id) === String(id); });
         openProductForm(p);
-      });
-    });
-    document.querySelectorAll('.pr-delete').forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        var id = btn.closest('tr').dataset.id;
-        var p = state.products.find(function (x) { return String(x.id) === String(id); });
-        if (!confirm('Remover "' + p.nome + '"?')) return;
-        api('/products/' + id, { method: 'DELETE' })
-          .then(function () { toast('Produto removido'); loadProductsAdmin(); })
-          .catch(function (err) { toast(err.message, 'err'); });
       });
     });
   }
@@ -807,7 +808,6 @@
         '<td><span class="role-pill ' + (c.role === 'admin' ? 'role-admin' : 'role-cliente') + '">' + (c.role === 'admin' ? 'Admin' : 'Cliente') + '</span></td>' +
         '<td><div class="actions-right">' +
         '<button type="button" class="btn-ghost icon cl-edit" aria-label="Editar"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg></button>' +
-        '<button type="button" class="btn-ghost icon btn-danger-text cl-delete" aria-label="Remover"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6"/></svg></button>' +
         '</div></td></tr>'
       );
     }).join('');
@@ -819,15 +819,6 @@
       btn.addEventListener('click', function () {
         var tr = btn.closest('tr');
         openClientForm({ id: tr.dataset.id, nome: tr.dataset.nome, email: tr.dataset.email });
-      });
-    });
-    document.querySelectorAll('.cl-delete').forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        var tr = btn.closest('tr');
-        if (!confirm('Remover "' + tr.dataset.nome + '"?')) return;
-        api('/clients/' + tr.dataset.id, { method: 'DELETE' })
-          .then(function () { toast('Cliente removido'); loadClientsAdmin(); })
-          .catch(function (err) { toast(err.message, 'err'); });
       });
     });
   }
@@ -869,4 +860,20 @@
     if (document.querySelector('#tab-meus-pedidos.active')) renderMyOrdersGuard();
   });
   loadProducts();
+
+  (function trackFromQueryLink() {
+    var token = new URLSearchParams(window.location.search).get('pedido');
+    if (!token) return;
+    showTab('rastrear');
+    document.getElementById('rastrear-result').innerHTML = '<div class="card-surface" style="padding:1.5rem;"><div class="skeleton" style="height:1.5rem;width:50%;margin-bottom:0.75rem;"></div><div class="skeleton" style="height:8rem;"></div></div>';
+    api('/orders/track/' + encodeURIComponent(token))
+      .then(function (pedido) {
+        state.trackedPedidoId = pedido.id;
+        renderTrackedOrder(pedido);
+        if (socket) socket.emit('acompanhar-pedido', { pedidoId: pedido.id });
+      })
+      .catch(function (err) {
+        document.getElementById('rastrear-result').innerHTML = '<div class="card-surface empty-state"><p style="font-weight:600;">Pedido não encontrado</p><p class="muted">' + escapeHtml(err.message) + '</p></div>';
+      });
+  })();
 })();

@@ -1,6 +1,7 @@
 import {
   Column,
   Entity,
+  Generated,
   Index,
   JoinColumn,
   ManyToOne,
@@ -16,6 +17,10 @@ import { PedidoStatusHistorico } from './pedido-status-historico.entity';
 export class Pedido {
   @PrimaryGeneratedColumn()
   id!: number;
+
+  @Column({ name: 'tracking_token', type: 'uuid', unique: true })
+  @Generated('uuid')
+  trackingToken!: string;
 
   @Index('idx_pedidos_cliente_id')
   @ManyToOne(() => Cliente, (cliente) => cliente.pedidos, { nullable: false })

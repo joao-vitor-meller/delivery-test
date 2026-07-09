@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -25,15 +26,18 @@ import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 import { FindOrdersQueryDto } from './dto/find-orders-query.dto';
 import { MailService } from '../mail/mail.service';
 import { OrdersGateway } from './orders.gateway';
+import { Role } from '../common/enums/role.enum';
 
 const STATUS_INICIAL = 'pendente';
 const STATUS_CANCELADO = 'cancelado';
 const POSTGRES_UNIQUE_VIOLATION = '23505';
 
+function startOfDay(dateString: string): Date {
+  return new Date(`${dateString.slice(0, 10)}T00:00:00.000Z`);
+}
+
 function endOfDay(dateString: string): Date {
-  const date = new Date(dateString);
-  date.setUTCHours(23, 59, 59, 999);
-  return date;
+  return new Date(`${dateString.slice(0, 10)}T23:59:59.999Z`);
 }
 
 @Injectable()
@@ -150,9 +154,9 @@ export class OrdersService {
       where.cliente = { id: query.clienteId };
     }
     if (query.dataInicio && query.dataFim) {
-      where.data = Between(new Date(query.dataInicio), endOfDay(query.dataFim));
+      where.data = Between(startOfDay(query.dataInicio), endOfDay(query.dataFim));
     } else if (query.dataInicio) {
-      where.data = MoreThanOrEqual(new Date(query.dataInicio));
+      where.data = MoreThanOrEqual(startOfDay(query.dataInicio));
     } else if (query.dataFim) {
       where.data = LessThanOrEqual(endOfDay(query.dataFim));
     }
@@ -171,6 +175,27 @@ export class OrdersService {
     });
     if (!pedido) {
       throw new NotFoundException(`Pedido #${id} não encontrado`);
+    }
+    return pedido;
+  }
+
+  async findOneForUser(id: number, currentUser: Cliente): Promise<Pedido> {
+    const pedido = await this.findOne(id);
+    if (currentUser.role !== Role.ADMIN && pedido.cliente.id !== currentUser.id) {
+      throw new ForbiddenException(
+        'Você não tem permissão para acessar este pedido',
+      );
+    }
+    return pedido;
+  }
+
+  async findOneByTrackingToken(trackingToken: string): Promise<Pedido> {
+    const pedido = await this.pedidosRepository.findOne({
+      where: { trackingToken },
+      relations: { cliente: true, status: true, itens: { produto: true } },
+    });
+    if (!pedido) {
+      throw new NotFoundException('Pedido não encontrado');
     }
     return pedido;
   }
