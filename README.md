@@ -33,7 +33,7 @@ GIF
   <img src="src/web/midia/demo.gif" alt="Demonstração da interface de delivery" width="360" />
 </p>
 
-Vídeo:
+Vídeo em https://github.com/joao-vitor-meller/delivery-test/blob/master/src/web/midia/demo.mp4
 
 <p align="center">
   <video src="src/web/midia/demo.mp4" controls width="480">
@@ -59,12 +59,13 @@ Pré-requisitos: Docker e Docker Compose instalados.
 
 3. Após subir, os serviços ficam disponíveis em:
 
-   | Serviço                            | URL                           |
-   | ---------------------------------- | ----------------------------- |
-   | API                                | http://localhost:3000         |
-   | Swagger (documentação da API)      | http://localhost:3000/swagger |
-   | Mailpit (caixa de e-mail de teste) | http://localhost:8025         |
-   | Dozzle (logs dos containers)       | http://localhost:9999         |
+   | Serviço                            | URL                             |
+   | ---------------------------------- | ------------------------------- |
+   | API                                | http://localhost:3000           |
+   | Interface para testes              | http://localhost:3000/interface |
+   | Swagger (documentação da API)      | http://localhost:3000/swagger   |
+   | Mailpit (caixa de e-mail de teste) | http://localhost:8025           |
+   | Dozzle (logs dos containers)       | http://localhost:9999           |
 
    As portas podem ser customizadas através das variáveis `API_PORT`, `DOZZLE_PORT` e `POSTGRES_PORT` no `.env`.
 
