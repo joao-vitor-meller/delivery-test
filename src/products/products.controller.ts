@@ -21,14 +21,17 @@ import { ProductsService } from './products.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { Produto } from '../database/entities/produto.entity';
+import { Auth } from '../auth/decorators/auth.decorator';
+import { Role } from '../common/enums/role.enum';
 
 @ApiTags('Products')
+@Auth(Role.ADMIN)
 @Controller('products')
 export class ProductsController {
   constructor(private readonly productsService: ProductsService) {}
 
   @Post()
-  @ApiOperation({ summary: 'Cria um novo produto' })
+  @ApiOperation({ summary: 'Cria um novo produto (ADMIN)' })
   @ApiResponse({
     status: HttpStatus.CREATED,
     description: 'Produto criado com sucesso',
@@ -43,7 +46,7 @@ export class ProductsController {
   }
 
   @Get()
-  @ApiOperation({ summary: 'Lista todos os produtos' })
+  @ApiOperation({ summary: 'Lista todos os produtos (ADMIN)' })
   @ApiResponse({
     status: HttpStatus.OK,
     description: 'Lista de produtos',
@@ -55,7 +58,7 @@ export class ProductsController {
 
   @ApiExcludeEndpoint()
   @Get(':id')
-  @ApiOperation({ summary: 'Busca um produto pelo id' })
+  @ApiOperation({ summary: 'Busca um produto pelo id (ADMIN)' })
   @ApiParam({
     name: 'id',
     type: Number,
@@ -76,7 +79,7 @@ export class ProductsController {
 
   @ApiExcludeEndpoint()
   @Patch(':id')
-  @ApiOperation({ summary: 'Atualiza um produto existente' })
+  @ApiOperation({ summary: 'Atualiza um produto existente (ADMIN)' })
   @ApiParam({
     name: 'id',
     type: Number,
@@ -100,7 +103,7 @@ export class ProductsController {
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  @ApiOperation({ summary: 'Remove um produto' })
+  @ApiOperation({ summary: 'Remove um produto (ADMIN)' })
   @ApiParam({
     name: 'id',
     type: Number,

@@ -1,13 +1,7 @@
-import { ApiPropertyOptional, ApiProperty } from '@nestjs/swagger';
-import {
-  IsEmail,
-  IsOptional,
-  IsString,
-  MaxLength,
-  MinLength,
-} from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
+import { IsEmail, IsString, MaxLength, MinLength } from 'class-validator';
 
-export class CreateClientDto {
+export class RegisterDto {
   @ApiProperty({
     description: 'Nome do cliente',
     minLength: 1,
@@ -28,16 +22,14 @@ export class CreateClientDto {
   @MaxLength(150)
   email!: string;
 
-  @ApiPropertyOptional({
-    description:
-      'Senha do cliente. Se informada, permite login via /auth/login',
+  @ApiProperty({
+    description: 'Senha do cliente',
     minLength: 6,
     maxLength: 255,
     example: 'senhaForte123',
   })
-  @IsOptional()
   @IsString()
   @MinLength(6)
   @MaxLength(255)
-  senha?: string;
+  senha!: string;
 }

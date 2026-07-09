@@ -14,7 +14,12 @@ import { OrdersService } from './orders.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 import { FindOrdersQueryDto } from './dto/find-orders-query.dto';
+import { FindMyOrdersQueryDto } from './dto/find-my-orders-query.dto';
 import { Pedido } from '../database/entities/pedido.entity';
+import { Cliente } from '../database/entities/cliente.entity';
+import { Auth } from '../auth/decorators/auth.decorator';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { Role } from '../common/enums/role.enum';
 
 @ApiTags('Orders')
 @Controller('orders')
@@ -24,7 +29,7 @@ export class OrdersController {
   @Post()
   @ApiOperation({
     summary:
-      'Cria um novo pedido. Se o e-mail do cliente ainda não estiver cadastrado, o cliente é criado automaticamente',
+      'Cria um novo pedido. Se o e-mail do cliente ainda não estiver cadastrado, o cliente é criado automaticamente (PÚBLICO)',
   })
   @ApiResponse({
     status: HttpStatus.CREATED,
@@ -44,9 +49,10 @@ export class OrdersController {
   }
 
   @Get()
+  @Auth(Role.ADMIN)
   @ApiOperation({
     summary:
-      'Lista pedidos, com filtros opcionais de status, cliente e período',
+      'Lista pedidos, com filtros opcionais de status, cliente e período (ADMIN)',
   })
   @ApiResponse({
     status: HttpStatus.OK,
@@ -57,8 +63,26 @@ export class OrdersController {
     return this.ordersService.findAll(query);
   }
 
+  @Get('me')
+  @Auth()
+  @ApiOperation({
+    summary:
+      'Lista os pedidos do cliente autenticado, com filtros opcionais de status e período (ADMIN/CLIENTE)',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Lista de pedidos do cliente autenticado',
+    type: [Pedido],
+  })
+  findMine(
+    @CurrentUser() cliente: Cliente,
+    @Query() query: FindMyOrdersQueryDto,
+  ) {
+    return this.ordersService.findAll({ ...query, clienteId: cliente.id });
+  }
+
   @Get(':id')
-  @ApiOperation({ summary: 'Busca um pedido pelo id' })
+  @ApiOperation({ summary: 'Busca um pedido pelo id (PÚBLICO)' })
   @ApiParam({
     name: 'id',
     type: Number,
@@ -78,7 +102,8 @@ export class OrdersController {
   }
 
   @Patch(':id/status')
-  @ApiOperation({ summary: 'Atualiza o status de um pedido' })
+  @Auth(Role.ADMIN)
+  @ApiOperation({ summary: 'Atualiza o status de um pedido (ADMIN)' })
   @ApiParam({
     name: 'id',
     type: Number,

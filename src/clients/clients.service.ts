@@ -1,11 +1,13 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { QueryFailedError, Repository } from 'typeorm';
+import * as bcrypt from 'bcryptjs';
 import { Cliente } from '../database/entities/cliente.entity';
 import { CreateClientDto } from './dto/create-client.dto';
 import { UpdateClientDto } from './dto/update-client.dto';
 
 const POSTGRES_UNIQUE_VIOLATION = '23505';
+const SALT_ROUNDS = 10;
 
 @Injectable()
 export class ClientsService {
@@ -18,7 +20,11 @@ export class ClientsService {
     const cliente = this.clientsRepository.create({
       nome: createClientDto.nome,
       email: createClientDto.email,
+      senha: createClientDto.senha
+        ? await bcrypt.hash(createClientDto.senha, SALT_ROUNDS)
+        : null,
     });
+
     try {
       return await this.clientsRepository.save(cliente);
     } catch (error) {
@@ -47,6 +53,9 @@ export class ClientsService {
     }
     if (updateClientDto.email !== undefined) {
       cliente.email = updateClientDto.email;
+    }
+    if (updateClientDto.senha !== undefined) {
+      cliente.senha = await bcrypt.hash(updateClientDto.senha, SALT_ROUNDS);
     }
 
     try {

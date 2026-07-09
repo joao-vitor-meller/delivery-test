@@ -8,6 +8,7 @@ import { DatabaseSeedModule } from './database/database-seed.module';
 import { OrdersModule } from './orders/orders.module';
 import { ClientsModule } from './clients/clients.module';
 import { ProductsModule } from './products/products.module';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { ProductsModule } from './products/products.module';
     OrdersModule,
     ClientsModule,
     ProductsModule,
+    AuthModule,
   ],
   controllers: [AppController],
   providers: [AppService],
