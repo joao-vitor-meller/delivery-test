@@ -27,12 +27,12 @@ API de delivery construída com [Nest](https://github.com/nestjs/nest), [TypeORM
 
 ### Funcionalidades
 
-- **Autenticação e autorização** — cadastro/login de clientes com JWT, rota `me` autenticada e controle de acesso por papel (`ADMIN` / `CLIENTE`).
-- **Clientes** — CRUD de clientes (ADMIN), com criação automática do cliente ao finalizar um pedido caso o e-mail ainda não exista.
-- **Produtos** — CRUD de produtos com controle de estoque; listagem pública, criação/edição restritas ao ADMIN.
-- **Pedidos** — criação pública de pedidos (com baixa de estoque), listagem com filtros por status/cliente/período, consulta pelos próprios pedidos (`/orders/me`) e atualização de status pelo ADMIN.
+- **Autenticação e autorização** — cadastro/login de clientes com JWT e controle de acesso por papel (`ADMIN` / `CLIENTE`).
+- **Clientes**
+- **Produtos**
+- **Pedidos** — criação pública de pedidos (com baixa de estoque), listagem com filtros por status/cliente/período.
 - **Rastreio público** — cada pedido recebe um token de rastreio único, permitindo consulta do status sem necessidade de login (`/orders/track/:token`).
-- **Atualizações em tempo real** — WebSocket (`OrdersGateway`) que notifica o cliente e os admins assim que o status de um pedido muda, agrupando conexões em salas por cliente/pedido.
+- **Atualizações em tempo real** — WebSocket (`OrdersGateway`) que notifica o cliente e os admins assim que o status de um pedido muda.
 - **Notificações por e-mail** — envio automático de e-mails de confirmação de pedido e de mudança de status (via Nodemailer + templates Handlebars).
 - **Interface de demonstração** — página web em `/interface` para simular todo o fluxo (cadastro, pedido, acompanhamento em tempo real).
 - **Documentação da API** — Swagger disponível em `/swagger`.
