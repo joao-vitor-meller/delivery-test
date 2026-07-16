@@ -22,6 +22,7 @@ import { Status } from '../database/entities/status.entity';
 import { Cliente } from '../database/entities/cliente.entity';
 import { MailService } from '../mail/mail.service';
 import { Role } from '../common/enums/role.enum';
+import { TipoEntrega } from '../common/enums/tipo-entrega.enum';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { FindOrdersQueryDto } from './dto/find-orders-query.dto';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
@@ -50,6 +51,7 @@ function mockMailService() {
 function mockOrdersGateway() {
   return {
     emitStatusAtualizado: jest.fn<void, [Pedido]>(),
+    emitPedidoCriado: jest.fn<void, [Pedido]>(),
   };
 }
 
@@ -251,6 +253,72 @@ describe('OrdersService', () => {
         BadRequestException,
       );
     });
+
+    // Sem tipoEntrega informado, o pedido é tratado como entrega e o endereço
+    // enviado deve ser persistido no pedido.
+    it('grava tipoEntrega "entrega" (padrão) e o endereço informado', async () => {
+      const dtoComEndereco: CreateOrderDto = {
+        ...dto,
+        endereco: {
+          rua: 'Rua das Flores',
+          numero: '123',
+          bairro: 'Centro',
+          cidade: 'Santa Maria',
+          cep: '97000-000',
+        },
+      };
+      statusRepository.findOneBy.mockResolvedValue(statusPendente);
+      produtosRepository.findBy.mockResolvedValue([produto]);
+      const manager = stubTransaction({ clienteExistente: null });
+      pedidosRepository.findOne.mockResolvedValue({ id: 1 } as Pedido);
+
+      await service.create(dtoComEndereco);
+
+      expect(manager.save).toHaveBeenCalledWith(
+        expect.objectContaining({
+          tipoEntrega: TipoEntrega.ENTREGA,
+          enderecoRua: 'Rua das Flores',
+          enderecoNumero: '123',
+          enderecoBairro: 'Centro',
+          enderecoCidade: 'Santa Maria',
+          enderecoCep: '97000-000',
+        }),
+      );
+    });
+
+    // Para retirada na loja, nenhum campo de endereço deve ser persistido, mesmo
+    // que o cliente tenha informado um endereço por engano.
+    it('não grava endereço quando o tipoEntrega é "retirada"', async () => {
+      const dtoRetirada: CreateOrderDto = {
+        ...dto,
+        tipoEntrega: TipoEntrega.RETIRADA,
+        endereco: {
+          rua: 'Rua Ignorada',
+          numero: '1',
+          bairro: 'Bairro',
+          cidade: 'Cidade',
+          cep: '00000-000',
+        },
+      };
+      statusRepository.findOneBy.mockResolvedValue(statusPendente);
+      produtosRepository.findBy.mockResolvedValue([produto]);
+      const manager = stubTransaction({ clienteExistente: null });
+      pedidosRepository.findOne.mockResolvedValue({ id: 1 } as Pedido);
+
+      await service.create(dtoRetirada);
+
+      expect(manager.save).toHaveBeenCalledWith(
+        expect.objectContaining({
+          tipoEntrega: TipoEntrega.RETIRADA,
+          enderecoRua: null,
+          enderecoNumero: null,
+          enderecoComplemento: null,
+          enderecoBairro: null,
+          enderecoCidade: null,
+          enderecoCep: null,
+        }),
+      );
+    });
   });
 
   // Listagem de pedidos com filtros opcionais (status, cliente, período).
@@ -399,10 +467,14 @@ describe('OrdersService', () => {
   describe('updateStatus', () => {
     const produtoItem = { produto: { id: 1 }, quantidade: 3 };
 
-    function buildPedido(statusNome: string) {
+    function buildPedido(
+      statusNome: string,
+      tipoEntrega = TipoEntrega.ENTREGA,
+    ) {
       return {
         id: 1,
         status: { id: 1, nome: statusNome },
+        tipoEntrega,
         itens: [produtoItem],
       } as unknown as Pedido;
     }
@@ -415,6 +487,57 @@ describe('OrdersService', () => {
       await expect(service.updateStatus(1, dto)).rejects.toThrow(
         BadRequestException,
       );
+    });
+
+    // "Pronto para retirada" só faz sentido para pedidos com retirada na loja.
+    it('lança BadRequestException ao marcar "pronto_para_retirada" em pedido de entrega', async () => {
+      pedidosRepository.findOne.mockResolvedValue(
+        buildPedido('pendente', TipoEntrega.ENTREGA),
+      );
+      statusRepository.findOneBy.mockResolvedValue({
+        id: 5,
+        nome: 'pronto_para_retirada',
+      } as Status);
+
+      const dto: UpdateOrderStatusDto = { statusId: 5 };
+      await expect(service.updateStatus(1, dto)).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    // "Saiu para entrega" não se aplica a pedidos de retirada na loja.
+    it('lança BadRequestException ao marcar "saiu_para_entrega" em pedido de retirada', async () => {
+      pedidosRepository.findOne.mockResolvedValue(
+        buildPedido('pendente', TipoEntrega.RETIRADA),
+      );
+      statusRepository.findOneBy.mockResolvedValue({
+        id: 4,
+        nome: 'saiu_para_entrega',
+      } as Status);
+
+      const dto: UpdateOrderStatusDto = { statusId: 4 };
+      await expect(service.updateStatus(1, dto)).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    // Combinação coerente: pedido de retirada pode ser marcado como pronto para retirada.
+    it('permite marcar "pronto_para_retirada" em pedido de retirada', async () => {
+      const pedido = buildPedido('pendente', TipoEntrega.RETIRADA);
+      const novoStatus = { id: 5, nome: 'pronto_para_retirada' } as Status;
+      pedidosRepository.findOne
+        .mockResolvedValueOnce(pedido)
+        .mockResolvedValueOnce({ ...pedido, status: novoStatus });
+      statusRepository.findOneBy.mockResolvedValue(novoStatus);
+      const { manager } = buildTransactionManager();
+      pedidosRepository.manager.transaction.mockImplementation((cb) =>
+        cb(manager as unknown as EntityManager),
+      );
+
+      const dto: UpdateOrderStatusDto = { statusId: 5 };
+      const resultado = await service.updateStatus(1, dto);
+
+      expect(resultado.status).toBe(novoStatus);
     });
 
     // Fluxo normal (sem cancelamento): não deve mexer no estoque.
@@ -481,6 +604,77 @@ describe('OrdersService', () => {
       await service.updateStatus(1, dto);
 
       expect(manager.increment).not.toHaveBeenCalled();
+    });
+  });
+
+  // Cancelamento pelo próprio cliente (PATCH /orders/:id/cancel): só o dono pode cancelar,
+  // e não é possível cancelar um pedido já cancelado ou já entregue.
+  describe('cancelByCliente', () => {
+    const produtoItem = { produto: { id: 1 }, quantidade: 2 };
+
+    function buildPedido(statusNome: string, clienteId = 7) {
+      return {
+        id: 1,
+        cliente: { id: clienteId },
+        status: { id: 1, nome: statusNome },
+        itens: [produtoItem],
+      } as unknown as Pedido;
+    }
+
+    it('lança ForbiddenException quando o pedido pertence a outro cliente', async () => {
+      const pedido = buildPedido('pendente', 7);
+      pedidosRepository.findOne.mockResolvedValue(pedido);
+      const outroCliente = { id: 99 } as Cliente;
+
+      await expect(service.cancelByCliente(1, outroCliente)).rejects.toThrow(
+        ForbiddenException,
+      );
+    });
+
+    it('lança BadRequestException quando o pedido já está cancelado', async () => {
+      const pedido = buildPedido('cancelado', 7);
+      pedidosRepository.findOne.mockResolvedValue(pedido);
+      const cliente = { id: 7 } as Cliente;
+
+      await expect(service.cancelByCliente(1, cliente)).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it('lança BadRequestException quando o pedido já foi entregue', async () => {
+      const pedido = buildPedido('entregue', 7);
+      pedidosRepository.findOne.mockResolvedValue(pedido);
+      const cliente = { id: 7 } as Cliente;
+
+      await expect(service.cancelByCliente(1, cliente)).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it('cancela o pedido do próprio cliente, repõe o estoque e notifica', async () => {
+      const pedido = buildPedido('pendente', 7);
+      const statusCancelado = { id: 4, nome: 'cancelado' } as Status;
+      pedidosRepository.findOne
+        .mockResolvedValueOnce(pedido)
+        .mockResolvedValueOnce({ ...pedido, status: statusCancelado });
+      statusRepository.findOneBy.mockResolvedValue(statusCancelado);
+      const { manager } = buildTransactionManager();
+      pedidosRepository.manager.transaction.mockImplementation((cb) =>
+        cb(manager as unknown as EntityManager),
+      );
+      const cliente = { id: 7 } as Cliente;
+
+      const resultado = await service.cancelByCliente(1, cliente);
+
+      expect(manager.increment).toHaveBeenCalledWith(
+        Produto,
+        { id: produtoItem.produto.id },
+        'estoque',
+        produtoItem.quantidade,
+      );
+      expect(mailService.sendOrderStatusUpdated).toHaveBeenCalled();
+      expect(ordersGateway.emitStatusAtualizado).toHaveBeenCalled();
+      expect(resultado.status).toBe(statusCancelado);
     });
   });
 

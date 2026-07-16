@@ -27,9 +27,13 @@ import { FindOrdersQueryDto } from './dto/find-orders-query.dto';
 import { MailService } from '../mail/mail.service';
 import { OrdersGateway } from './orders.gateway';
 import { Role } from '../common/enums/role.enum';
+import { TipoEntrega } from '../common/enums/tipo-entrega.enum';
 
 const STATUS_INICIAL = 'pendente';
 const STATUS_CANCELADO = 'cancelado';
+const STATUS_ENTREGUE = 'entregue';
+const STATUS_SAIU_PARA_ENTREGA = 'saiu_para_entrega';
+const STATUS_PRONTO_PARA_RETIRADA = 'pronto_para_retirada';
 const POSTGRES_UNIQUE_VIOLATION = '23505';
 
 function startOfDay(dateString: string): Date {
@@ -90,6 +94,10 @@ export class OrdersService {
       0,
     );
 
+    const tipoEntrega = createOrderDto.tipoEntrega ?? TipoEntrega.ENTREGA;
+    const endereco =
+      tipoEntrega === TipoEntrega.ENTREGA ? createOrderDto.endereco : null;
+
     const pedido = await this.pedidosRepository.manager.transaction(
       async (manager) => {
         const cliente = await this.findOrCreateCliente(
@@ -102,6 +110,13 @@ export class OrdersService {
             cliente,
             status,
             valorTotal: valorTotal.toFixed(2),
+            tipoEntrega,
+            enderecoRua: endereco?.rua ?? null,
+            enderecoNumero: endereco?.numero ?? null,
+            enderecoComplemento: endereco?.complemento ?? null,
+            enderecoBairro: endereco?.bairro ?? null,
+            enderecoCidade: endereco?.cidade ?? null,
+            enderecoCep: endereco?.cep ?? null,
           }),
         );
 
@@ -141,6 +156,7 @@ export class OrdersService {
 
     const pedidoCompleto = await this.findOne(pedido.id);
     await this.mailService.sendOrderCreated(pedidoCompleto);
+    this.ordersGateway.emitPedidoCriado(pedidoCompleto);
     return pedidoCompleto;
   }
 
@@ -154,7 +170,10 @@ export class OrdersService {
       where.cliente = { id: query.clienteId };
     }
     if (query.dataInicio && query.dataFim) {
-      where.data = Between(startOfDay(query.dataInicio), endOfDay(query.dataFim));
+      where.data = Between(
+        startOfDay(query.dataInicio),
+        endOfDay(query.dataFim),
+      );
     } else if (query.dataInicio) {
       where.data = MoreThanOrEqual(startOfDay(query.dataInicio));
     } else if (query.dataFim) {
@@ -181,7 +200,10 @@ export class OrdersService {
 
   async findOneForUser(id: number, currentUser: Cliente): Promise<Pedido> {
     const pedido = await this.findOne(id);
-    if (currentUser.role !== Role.ADMIN && pedido.cliente.id !== currentUser.id) {
+    if (
+      currentUser.role !== Role.ADMIN &&
+      pedido.cliente.id !== currentUser.id
+    ) {
       throw new ForbiddenException(
         'Você não tem permissão para acessar este pedido',
       );
@@ -214,7 +236,59 @@ export class OrdersService {
         `Status #${updateOrderStatusDto.statusId} inválido`,
       );
     }
+    if (
+      status.nome === STATUS_PRONTO_PARA_RETIRADA &&
+      pedido.tipoEntrega !== TipoEntrega.RETIRADA
+    ) {
+      throw new BadRequestException(
+        `Status "${STATUS_PRONTO_PARA_RETIRADA}" só é válido para pedidos com retirada na loja`,
+      );
+    }
+    if (
+      status.nome === STATUS_SAIU_PARA_ENTREGA &&
+      pedido.tipoEntrega !== TipoEntrega.ENTREGA
+    ) {
+      throw new BadRequestException(
+        `Status "${STATUS_SAIU_PARA_ENTREGA}" só é válido para pedidos com entrega`,
+      );
+    }
 
+    return this.applyStatusChange(pedido, status);
+  }
+
+  async cancelByCliente(id: number, currentUser: Cliente): Promise<Pedido> {
+    const pedido = await this.findOne(id);
+
+    if (pedido.cliente.id !== currentUser.id) {
+      throw new ForbiddenException(
+        'Você não tem permissão para cancelar este pedido',
+      );
+    }
+    if (pedido.status.nome === STATUS_CANCELADO) {
+      throw new BadRequestException('Este pedido já está cancelado');
+    }
+    if (pedido.status.nome === STATUS_ENTREGUE) {
+      throw new BadRequestException(
+        'Não é possível cancelar um pedido já entregue',
+      );
+    }
+
+    const statusCancelado = await this.statusRepository.findOneBy({
+      nome: STATUS_CANCELADO,
+    });
+    if (!statusCancelado) {
+      throw new BadRequestException(
+        `Status "${STATUS_CANCELADO}" não está configurado`,
+      );
+    }
+
+    return this.applyStatusChange(pedido, statusCancelado);
+  }
+
+  private async applyStatusChange(
+    pedido: Pedido,
+    status: Status,
+  ): Promise<Pedido> {
     const estavaCancelado = pedido.status.nome === STATUS_CANCELADO;
     const vaiCancelar = status.nome === STATUS_CANCELADO;
     pedido.status = status;
@@ -237,7 +311,7 @@ export class OrdersService {
       }
     });
 
-    const pedidoAtualizado = await this.findOne(id);
+    const pedidoAtualizado = await this.findOne(pedido.id);
     await this.mailService.sendOrderStatusUpdated(pedidoAtualizado);
     this.ordersGateway.emitStatusAtualizado(pedidoAtualizado);
     return pedidoAtualizado;

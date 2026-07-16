@@ -16,6 +16,7 @@ function mockOrdersService() {
     findOneForUser: jest.fn<Pedido, [number, Cliente]>(),
     findOneByTrackingToken: jest.fn<Pedido, [string]>(),
     updateStatus: jest.fn<Pedido, [number, UpdateOrderStatusDto]>(),
+    cancelByCliente: jest.fn<Pedido, [number, Cliente]>(),
   };
 }
 
@@ -133,6 +134,23 @@ describe('OrdersController', () => {
 
       expect(ordersService.updateStatus).toHaveBeenCalledWith(1, dto);
       expect(resultado).toBe(pedidoAtualizado);
+    });
+  });
+
+  // PATCH /orders/:id/cancel (CLIENTE, apenas o próprio pedido — regra fica no service)
+  describe('cancel', () => {
+    it('delega o cancelamento do pedido ao service, considerando o usuário autenticado', () => {
+      const cliente = { id: 7, role: Role.CLIENTE } as Cliente;
+      const pedidoCancelado = {
+        id: 1,
+        status: { nome: 'cancelado' },
+      } as Pedido;
+      ordersService.cancelByCliente.mockReturnValue(pedidoCancelado);
+
+      const resultado = controller.cancel(1, cliente);
+
+      expect(ordersService.cancelByCliente).toHaveBeenCalledWith(1, cliente);
+      expect(resultado).toBe(pedidoCancelado);
     });
   });
 });

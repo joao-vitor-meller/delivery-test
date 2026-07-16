@@ -15,13 +15,20 @@
 
   var STATUS_LABELS = {
     pendente: 'Pendente', confirmado: 'Confirmado', em_preparo: 'Em preparo',
-    saiu_para_entrega: 'Saiu para entrega', entregue: 'Entregue', cancelado: 'Cancelado',
+    saiu_para_entrega: 'Saiu para entrega', pronto_para_retirada: 'Pronto para retirada',
+    entregue: 'Entregue', cancelado: 'Cancelado',
   };
-  var FLOW = ['pendente', 'confirmado', 'em_preparo', 'saiu_para_entrega', 'entregue'];
+  var FLOW_ENTREGA = ['pendente', 'confirmado', 'em_preparo', 'saiu_para_entrega', 'entregue'];
+  var FLOW_RETIRADA = ['pendente', 'confirmado', 'em_preparo', 'pronto_para_retirada', 'entregue'];
+  function flowFor(pedido) { return pedido && pedido.tipoEntrega === 'retirada' ? FLOW_RETIRADA : FLOW_ENTREGA; }
 
   function statusLabel(nome) { return (nome && STATUS_LABELS[nome.toLowerCase()]) || nome || '—'; }
 
-  var STATUS_CLASSES = { pendente: 'st-pendente', confirmado: 'st-confirmado', em_preparo: 'st-em_preparo', saiu_para_entrega: 'st-saiu_para_entrega', entregue: 'st-entregue', cancelado: 'st-cancelado' };
+  var STATUS_CLASSES = {
+    pendente: 'st-pendente', confirmado: 'st-confirmado', em_preparo: 'st-em_preparo',
+    saiu_para_entrega: 'st-saiu_para_entrega', pronto_para_retirada: 'st-pronto_para_retirada',
+    entregue: 'st-entregue', cancelado: 'st-cancelado',
+  };
   function statusClass(nome) { return STATUS_CLASSES[(nome || '').toLowerCase()] || 'st-default'; }
 
   function escapeHtml(value) {
@@ -127,8 +134,16 @@
       if (state.trackedPedidoId === pedido.id) renderTrackedOrder(pedido);
       var activeTab = document.querySelector('#tab-meus-pedidos.active');
       if (activeTab) loadMyOrders();
-      if (document.querySelector('#tab-admin.active') && !document.getElementById('admin-pedidos').classList.contains('hidden')) loadAllOrders();
+      if (isAdminPedidosVisible()) loadAllOrders();
     });
+    socket.on('pedido:novo', function (pedido) {
+      toast('Novo pedido #' + pedido.id + ' recebido' + (pedido.cliente ? ' de ' + pedido.cliente.nome : '') + '!');
+      if (isAdminPedidosVisible()) loadAllOrders();
+    });
+  }
+
+  function isAdminPedidosVisible() {
+    return !!document.querySelector('#tab-admin.active') && !document.getElementById('admin-pedidos').classList.contains('hidden');
   }
 
   // ---------- tabs ----------
@@ -310,6 +325,21 @@
       '<label class="field-label"><span class="lbl">Nome</span><input type="text" id="co-nome" class="input-field" maxlength="150" placeholder="Seu nome" value="' + escapeHtml(prefillNome) + '" /></label>' +
       '<label class="field-label"><span class="lbl">E-mail <span class="req">*</span></span><input type="email" id="co-email" class="input-field" required maxlength="150" placeholder="voce@email.com" value="' + escapeHtml(prefillEmail) + '" /></label>' +
       '</div>' +
+      '<div style="border-top:1px solid var(--border);padding-top:1rem;">' +
+      '<span class="lbl">Como você quer receber?</span>' +
+      '<div style="display:flex;gap:1.5rem;margin-top:0.5rem;">' +
+      '<label style="display:flex;align-items:center;gap:0.4rem;"><input type="radio" name="co-tipo-entrega" value="entrega" checked /> Entrega no endereço</label>' +
+      '<label style="display:flex;align-items:center;gap:0.4rem;"><input type="radio" name="co-tipo-entrega" value="retirada" /> Retirar na loja</label>' +
+      '</div>' +
+      '</div>' +
+      '<div id="co-endereco-fields" class="form-grid g2">' +
+      '<label class="field-label"><span class="lbl">Rua <span class="req">*</span></span><input type="text" id="co-rua" class="input-field" maxlength="200" placeholder="Rua das Flores" /></label>' +
+      '<label class="field-label"><span class="lbl">Número <span class="req">*</span></span><input type="text" id="co-numero" class="input-field" maxlength="20" placeholder="123" /></label>' +
+      '<label class="field-label"><span class="lbl">Complemento</span><input type="text" id="co-complemento" class="input-field" maxlength="100" placeholder="Apto 45 (opcional)" /></label>' +
+      '<label class="field-label"><span class="lbl">Bairro <span class="req">*</span></span><input type="text" id="co-bairro" class="input-field" maxlength="100" placeholder="Centro" /></label>' +
+      '<label class="field-label"><span class="lbl">Cidade <span class="req">*</span></span><input type="text" id="co-cidade" class="input-field" maxlength="100" placeholder="Santa Maria" /></label>' +
+      '<label class="field-label"><span class="lbl">CEP <span class="req">*</span></span><input type="text" id="co-cep" class="input-field" maxlength="9" placeholder="97000-000" /></label>' +
+      '</div>' +
       '<div style="display:flex;align-items:center;justify-content:space-between;border-top:1px solid var(--border);padding-top:1rem;">' +
       '<div><p class="hint">Total</p><p style="font-family:\'Bricolage Grotesque\',sans-serif;font-size:1.5rem;font-weight:800;color:var(--primary);">' + formatMoney(cartTotal()) + '</p></div>' +
       '<button type="submit" class="btn-primary" id="co-submit">Finalizar pedido</button>' +
@@ -340,15 +370,40 @@
       });
     });
 
+    var enderecoFields = document.getElementById('co-endereco-fields');
+    function syncEnderecoVisibility() {
+      var retirada = el.querySelector('input[name="co-tipo-entrega"]:checked').value === 'retirada';
+      enderecoFields.style.display = retirada ? 'none' : '';
+      ['co-rua', 'co-numero', 'co-bairro', 'co-cidade', 'co-cep'].forEach(function (id) {
+        document.getElementById(id).required = !retirada;
+      });
+    }
+    syncEnderecoVisibility();
+    el.querySelectorAll('input[name="co-tipo-entrega"]').forEach(function (radio) {
+      radio.addEventListener('change', syncEnderecoVisibility);
+    });
+
     document.getElementById('form-checkout').addEventListener('submit', function (e) {
       e.preventDefault();
       var nome = document.getElementById('co-nome').value.trim();
       var email = document.getElementById('co-email').value.trim();
+      var tipoEntrega = el.querySelector('input[name="co-tipo-entrega"]:checked').value;
       var payload = {
         cliente: { email: email },
         itens: state.cart.map(function (i) { return { produtoId: i.produto.id, quantidade: i.quantidade }; }),
+        tipoEntrega: tipoEntrega,
       };
       if (nome) payload.cliente.nome = nome;
+      if (tipoEntrega === 'entrega') {
+        payload.endereco = {
+          rua: document.getElementById('co-rua').value.trim(),
+          numero: document.getElementById('co-numero').value.trim(),
+          complemento: document.getElementById('co-complemento').value.trim() || undefined,
+          bairro: document.getElementById('co-bairro').value.trim(),
+          cidade: document.getElementById('co-cidade').value.trim(),
+          cep: document.getElementById('co-cep').value.trim(),
+        };
+      }
       var submitBtn = document.getElementById('co-submit');
       submitBtn.disabled = true;
       submitBtn.textContent = 'Enviando...';
@@ -461,6 +516,31 @@
 
   // ---------- rastrear pedido ----------
 
+  function canClienteCancelar(pedido) {
+    if (!state.user || state.user.role !== 'cliente') return false;
+    if (!pedido.cliente || pedido.cliente.id !== state.user.id) return false;
+    var nome = (pedido.status && pedido.status.nome ? pedido.status.nome : '').toLowerCase();
+    return nome !== 'cancelado' && nome !== 'entregue';
+  }
+
+  function cancelarPedido(pedido, btn) {
+    if (!window.confirm('Tem certeza que deseja cancelar o pedido #' + pedido.id + '?')) return;
+    btn.disabled = true;
+    btn.textContent = 'Cancelando...';
+    api('/orders/' + pedido.id + '/cancel', { method: 'PATCH' })
+      .then(function (atualizado) {
+        toast('Pedido #' + atualizado.id + ' cancelado');
+        renderTrackedOrder(atualizado);
+        var activeTab = document.querySelector('#tab-meus-pedidos.active');
+        if (activeTab) loadMyOrders();
+      })
+      .catch(function (err) {
+        toast(err.message, 'err');
+        btn.disabled = false;
+        btn.textContent = 'Cancelar pedido';
+      });
+  }
+
   function renderTrackedOrder(pedido) {
     var result = document.getElementById('rastrear-result');
     var nome = (pedido.status && pedido.status.nome ? pedido.status.nome : '').toLowerCase();
@@ -469,8 +549,9 @@
     if (nome === 'cancelado') {
       timelineHtml = '<div class="cancel-banner"><svg class="icon lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m21 8-5-5H5v18l7-3 7 3z"/></svg><div><p style="font-weight:700;">Pedido cancelado</p><p style="font-size:0.85rem;opacity:.85;">Este pedido foi cancelado.</p></div></div>';
     } else {
-      var currentIdx = FLOW.indexOf(nome);
-      timelineHtml = '<ol class="timeline">' + FLOW.map(function (step, i) {
+      var flow = flowFor(pedido);
+      var currentIdx = flow.indexOf(nome);
+      timelineHtml = '<ol class="timeline">' + flow.map(function (step, i) {
         var done = currentIdx > i;
         var current = currentIdx === i;
         var dotCls = done ? 'done' : (current ? 'current' : '');
@@ -478,7 +559,7 @@
           '<li>' +
           '<div class="col">' +
           '<span class="step-dot ' + dotCls + '">' + (done ? '✓' : (i + 1)) + '</span>' +
-          (i < FLOW.length - 1 ? '<span class="step-line ' + (done ? 'done' : '') + '"></span>' : '') +
+          (i < flow.length - 1 ? '<span class="step-line ' + (done ? 'done' : '') + '"></span>' : '') +
           '</div>' +
           '<div class="step-body">' +
           '<p class="step-title ' + (current ? 'current' : (done ? '' : 'muted')) + '">' + statusLabel(step) + '</p>' +
@@ -503,7 +584,10 @@
       '<div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:0.5rem;margin-bottom:1rem;">' +
       '<div><h2 style="font-size:1.3rem;font-weight:700;">Pedido #' + pedido.id + '</h2>' +
       '<p class="hint">Feito em ' + formatDate(pedido.data) + (pedido.cliente ? ' · ' + escapeHtml(pedido.cliente.nome) : '') + '</p></div>' +
+      '<div style="display:flex;align-items:center;gap:0.75rem;">' +
       '<span class="badge-status ' + statusClass(nome) + '"><span class="dot"></span>' + statusLabel(nome) + '</span>' +
+      (canClienteCancelar(pedido) ? '<button type="button" class="btn-outline btn-danger-text" id="btn-cancelar-pedido">Cancelar pedido</button>' : '') +
+      '</div>' +
       '</div>' +
       '<div class="card-surface" style="padding:1.25rem;margin-bottom:1rem;">' +
       '<div class="hint" style="display:flex;align-items:center;gap:0.4rem;margin-bottom:1rem;"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--status-entregue);"><path d="M5 12.55a11 11 0 0 1 14.08 0M1.42 9a16 16 0 0 1 21.16 0M8.53 16.11a6 6 0 0 1 6.95 0M12 20h.01"/></svg>Atualização em tempo real ativa</div>' +
@@ -517,6 +601,26 @@
       '<span style="font-family:\'Bricolage Grotesque\',sans-serif;font-size:1.3rem;font-weight:800;color:var(--primary);">' + formatMoney(pedido.valorTotal) + '</span>' +
       '</div></div>' +
       (function () {
+        if (pedido.tipoEntrega === 'retirada') {
+          return (
+            '<div class="card-surface" style="padding:1.25rem;margin-top:1rem;">' +
+            '<h3 style="font-size:1.05rem;font-weight:700;margin-bottom:0.25rem;">Retirada na loja</h3>' +
+            '<p class="hint">Este pedido será retirado no balcão, sem entrega em endereço.</p>' +
+            '</div>'
+          );
+        }
+        if (!pedido.enderecoRua) return '';
+        return (
+          '<div class="card-surface" style="padding:1.25rem;margin-top:1rem;">' +
+          '<h3 style="font-size:1.05rem;font-weight:700;margin-bottom:0.25rem;">Endereço de entrega</h3>' +
+          '<p class="hint">' +
+          escapeHtml(pedido.enderecoRua) + ', ' + escapeHtml(pedido.enderecoNumero) +
+          (pedido.enderecoComplemento ? ' - ' + escapeHtml(pedido.enderecoComplemento) : '') + '<br />' +
+          escapeHtml(pedido.enderecoBairro) + ' · ' + escapeHtml(pedido.enderecoCidade) + ' · ' + escapeHtml(pedido.enderecoCep) +
+          '</p></div>'
+        );
+      })() +
+      (function () {
         var link = trackingLinkFor(pedido);
         if (!link) return '';
         return (
@@ -527,6 +631,9 @@
           '<p class="hint" style="text-align:center;margin-top:0.75rem;">Qualquer pessoa com este link pode acompanhar o pedido, sem precisar entrar na conta.</p>'
         );
       })();
+
+    var cancelBtn = document.getElementById('btn-cancelar-pedido');
+    if (cancelBtn) cancelBtn.addEventListener('click', function () { cancelarPedido(pedido, cancelBtn); });
   }
 
   // ---------- status ----------
@@ -547,8 +654,14 @@
     }).catch(function (err) { toast(err.message, 'err'); return []; });
   }
 
-  function statusSelectHtml(currentId, pedidoId) {
-    return '<select class="input-field status-changer" data-id="' + pedidoId + '" style="width:11rem;">' + state.statuses.map(function (s) {
+  function statusSelectHtml(currentId, pedidoId, tipoEntrega) {
+    var statuses = state.statuses.filter(function (s) {
+      var nome = (s.nome || '').toLowerCase();
+      if (nome === 'pronto_para_retirada') return tipoEntrega === 'retirada';
+      if (nome === 'saiu_para_entrega') return tipoEntrega !== 'retirada';
+      return true;
+    });
+    return '<select class="input-field status-changer" data-id="' + pedidoId + '" style="width:11rem;">' + statuses.map(function (s) {
       return '<option value="' + s.id + '"' + (s.id === currentId ? ' selected' : '') + '>' + escapeHtml(statusLabel(s.nome)) + '</option>';
     }).join('') + '</select>';
   }
@@ -591,7 +704,7 @@
         '<span style="font-weight:600;">Pedido #' + p.id + '</span>' +
         '<span class="badge-status ' + statusClass(p.status ? p.status.nome : '') + '"><span class="dot"></span>' + statusLabel(p.status ? p.status.nome : '') + '</span>' +
         '</div>' +
-        '<p class="muted-line">' + (showCliente && p.cliente ? escapeHtml(p.cliente.nome) + ' · ' : '') + formatDate(p.data) + ' · ' + nItens + (nItens === 1 ? ' item' : ' itens') + '</p>' +
+        '<p class="muted-line">' + (showCliente && p.cliente ? escapeHtml(p.cliente.nome) + ' · ' : '') + formatDate(p.data) + ' · ' + nItens + (nItens === 1 ? ' item' : ' itens') + ' · ' + (p.tipoEntrega === 'retirada' ? 'Retirada na loja' : 'Entrega') + '</p>' +
         '</div>' +
         '<div style="display:flex;align-items:center;gap:0.5rem;">' +
         '<span class="order-total">' + formatMoney(p.valorTotal) + '</span>' +
@@ -697,10 +810,13 @@
         '</div>' +
         '<p class="hint" style="margin-top:0.25rem;">' + escapeHtml(p.cliente ? p.cliente.nome : '') + ' (' + escapeHtml(p.cliente ? p.cliente.email : '') + ') · ' + formatDate(p.data) + '</p>' +
         '<p class="hint" style="margin-top:0.25rem;">' + itensResumo + '</p>' +
+        '<p class="hint" style="margin-top:0.25rem;">' + (p.tipoEntrega === 'retirada'
+          ? 'Retirada na loja'
+          : 'Entrega: ' + escapeHtml(p.enderecoRua || '') + ', ' + escapeHtml(p.enderecoNumero || '') + ' · ' + escapeHtml(p.enderecoBairro || '') + ' · ' + escapeHtml(p.enderecoCidade || '')) + '</p>' +
         '</div>' +
         '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:0.5rem;">' +
         '<span style="font-family:\'Bricolage Grotesque\',sans-serif;font-size:1.05rem;font-weight:700;">' + formatMoney(p.valorTotal) + '</span>' +
-        statusSelectHtml(p.status ? p.status.id : null, p.id) +
+        statusSelectHtml(p.status ? p.status.id : null, p.id, p.tipoEntrega) +
         '</div></div></div>'
       );
     }).join('');

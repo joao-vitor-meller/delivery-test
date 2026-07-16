@@ -4,14 +4,17 @@ import {
   ArrayMinSize,
   IsArray,
   IsEmail,
+  IsEnum,
   IsInt,
   IsOptional,
   IsPositive,
   IsString,
   MaxLength,
   MinLength,
+  ValidateIf,
   ValidateNested,
 } from 'class-validator';
+import { TipoEntrega } from '../../common/enums/tipo-entrega.enum';
 
 export class CreateOrderClienteDto {
   @ApiProperty({
@@ -57,6 +60,57 @@ export class CreateOrderItemDto {
   quantidade!: number;
 }
 
+export class CreateOrderEnderecoDto {
+  @ApiProperty({
+    description: 'Rua/avenida',
+    maxLength: 200,
+    example: 'Rua das Flores',
+  })
+  @IsString()
+  @MinLength(1)
+  @MaxLength(200)
+  rua!: string;
+
+  @ApiProperty({ description: 'Número', maxLength: 20, example: '123' })
+  @IsString()
+  @MinLength(1)
+  @MaxLength(20)
+  numero!: string;
+
+  @ApiProperty({
+    description: 'Complemento (opcional)',
+    maxLength: 100,
+    required: false,
+    example: 'Apto 45',
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  complemento?: string;
+
+  @ApiProperty({ description: 'Bairro', maxLength: 100, example: 'Centro' })
+  @IsString()
+  @MinLength(1)
+  @MaxLength(100)
+  bairro!: string;
+
+  @ApiProperty({
+    description: 'Cidade',
+    maxLength: 100,
+    example: 'Santa Maria',
+  })
+  @IsString()
+  @MinLength(1)
+  @MaxLength(100)
+  cidade!: string;
+
+  @ApiProperty({ description: 'CEP', maxLength: 9, example: '97000-000' })
+  @IsString()
+  @MinLength(1)
+  @MaxLength(9)
+  cep!: string;
+}
+
 export class CreateOrderDto {
   @ApiProperty({
     description:
@@ -78,4 +132,32 @@ export class CreateOrderDto {
   @ValidateNested({ each: true })
   @Type(() => CreateOrderItemDto)
   itens!: CreateOrderItemDto[];
+
+  @ApiProperty({
+    description:
+      'Tipo de entrega do pedido: "entrega" (padrão, exige endereço) ou ' +
+      '"retirada" (retirada na loja, sem necessidade de endereço)',
+    enum: TipoEntrega,
+    required: false,
+    default: TipoEntrega.ENTREGA,
+    example: TipoEntrega.ENTREGA,
+  })
+  @IsOptional()
+  @IsEnum(TipoEntrega)
+  tipoEntrega!: TipoEntrega;
+
+  @ApiProperty({
+    description:
+      'Endereço de entrega. Obrigatório quando tipoEntrega for "entrega" ' +
+      '(ou omitido); ignorado quando for "retirada".',
+    type: CreateOrderEnderecoDto,
+    required: false,
+  })
+  @ValidateIf(
+    (dto: CreateOrderDto) =>
+      !dto.tipoEntrega || dto.tipoEntrega === TipoEntrega.ENTREGA,
+  )
+  @ValidateNested()
+  @Type(() => CreateOrderEnderecoDto)
+  endereco?: CreateOrderEnderecoDto;
 }

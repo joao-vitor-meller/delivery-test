@@ -5,6 +5,7 @@ export const STATUS_SEED = [
   'confirmado',
   'em_preparo',
   'saiu_para_entrega',
+  'pronto_para_retirada',
   'entregue',
   'cancelado',
 ];

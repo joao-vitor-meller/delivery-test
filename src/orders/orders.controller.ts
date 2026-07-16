@@ -163,4 +163,38 @@ export class OrdersController {
   ) {
     return this.ordersService.updateStatus(id, updateOrderStatusDto);
   }
+
+  @Patch(':id/cancel')
+  @Auth(Role.CLIENTE)
+  @ApiOperation({
+    summary: 'Cancela um pedido do próprio cliente autenticado (CLIENTE)',
+  })
+  @ApiParam({
+    name: 'id',
+    type: Number,
+    description: 'Identificador do pedido',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Pedido cancelado com sucesso',
+    type: Pedido,
+  })
+  @ApiResponse({
+    status: HttpStatus.FORBIDDEN,
+    description: 'Pedido pertence a outro cliente',
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Pedido já cancelado ou já entregue',
+  })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'Pedido não encontrado',
+  })
+  cancel(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() cliente: Cliente,
+  ) {
+    return this.ordersService.cancelByCliente(id, cliente);
+  }
 }

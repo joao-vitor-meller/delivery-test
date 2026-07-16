@@ -17,6 +17,7 @@ import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 import { Role } from '../common/enums/role.enum';
 
 const PEDIDO_STATUS_ATUALIZADO_EVENT = 'pedido:status-atualizado';
+const PEDIDO_CRIADO_EVENT = 'pedido:novo';
 
 @WebSocketGateway({ cors: { origin: true } })
 export class OrdersGateway implements OnGatewayConnection {
@@ -73,5 +74,9 @@ export class OrdersGateway implements OnGatewayConnection {
       .to(`cliente-${pedido.cliente.id}`)
       .to('admins')
       .emit(PEDIDO_STATUS_ATUALIZADO_EVENT, pedido);
+  }
+
+  emitPedidoCriado(pedido: Pedido): void {
+    this.server.to('admins').emit(PEDIDO_CRIADO_EVENT, pedido);
   }
 }

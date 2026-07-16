@@ -12,6 +12,7 @@ import { Cliente } from './cliente.entity';
 import { Status } from './status.entity';
 import { PedidoItem } from './pedido-item.entity';
 import { PedidoStatusHistorico } from './pedido-status-historico.entity';
+import { TipoEntrega } from '../../common/enums/tipo-entrega.enum';
 
 @Entity('pedidos')
 export class Pedido {
@@ -43,6 +44,58 @@ export class Pedido {
   @ManyToOne(() => Status, (status) => status.pedidos, { nullable: false })
   @JoinColumn({ name: 'status_id' })
   status!: Status;
+
+  @Column({
+    name: 'tipo_entrega',
+    type: 'enum',
+    enum: TipoEntrega,
+    enumName: 'pedidos_tipo_entrega_enum',
+    default: TipoEntrega.ENTREGA,
+  })
+  tipoEntrega!: TipoEntrega;
+
+  @Column({
+    name: 'endereco_rua',
+    type: 'varchar',
+    length: 200,
+    nullable: true,
+  })
+  enderecoRua?: string | null;
+
+  @Column({
+    name: 'endereco_numero',
+    type: 'varchar',
+    length: 20,
+    nullable: true,
+  })
+  enderecoNumero?: string | null;
+
+  @Column({
+    name: 'endereco_complemento',
+    type: 'varchar',
+    length: 100,
+    nullable: true,
+  })
+  enderecoComplemento?: string | null;
+
+  @Column({
+    name: 'endereco_bairro',
+    type: 'varchar',
+    length: 100,
+    nullable: true,
+  })
+  enderecoBairro?: string | null;
+
+  @Column({
+    name: 'endereco_cidade',
+    type: 'varchar',
+    length: 100,
+    nullable: true,
+  })
+  enderecoCidade?: string | null;
+
+  @Column({ name: 'endereco_cep', type: 'varchar', length: 9, nullable: true })
+  enderecoCep?: string | null;
 
   @OneToMany(() => PedidoItem, (item) => item.pedido)
   itens!: PedidoItem[];
